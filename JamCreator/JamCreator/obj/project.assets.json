@@ -1107,19 +1107,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\User\\.nuget\\packages\\": {}
+    "/Users/deividas/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator\\JamCreator.csproj",
+      "projectUniqueName": "/Users/deividas/Desktop/jamCreator/jamCreator/JamCreator/JamCreator/JamCreator.csproj",
       "projectName": "JamCreator",
-      "projectPath": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator\\JamCreator.csproj",
-      "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator\\obj\\",
+      "projectPath": "/Users/deividas/Desktop/jamCreator/jamCreator/JamCreator/JamCreator/JamCreator.csproj",
+      "packagesPath": "/Users/deividas/.nuget/packages/",
+      "outputPath": "/Users/deividas/Desktop/jamCreator/jamCreator/JamCreator/JamCreator/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\User\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "/Users/deividas/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
@@ -1131,8 +1131,8 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "projectReferences": {
-            "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Client\\JamCreator.Client.csproj": {
-              "projectPath": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Client\\JamCreator.Client.csproj"
+            "/Users/deividas/Desktop/jamCreator/jamCreator/JamCreator/JamCreator.Client/JamCreator.Client.csproj": {
+              "projectPath": "/Users/deividas/Desktop/jamCreator/jamCreator/JamCreator/JamCreator.Client/JamCreator.Client.csproj"
             }
           }
         }
@@ -1177,7 +1177,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/9.0.305/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

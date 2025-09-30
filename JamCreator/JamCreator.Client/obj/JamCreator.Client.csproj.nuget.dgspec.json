@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Client\\JamCreator.Client.csproj": {}
+    "/Users/deividas/Desktop/jamCreator/jamCreator/JamCreator/JamCreator.Client/JamCreator.Client.csproj": {}
   },
   "projects": {
-    "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Client\\JamCreator.Client.csproj": {
+    "/Users/deividas/Desktop/jamCreator/jamCreator/JamCreator/JamCreator.Client/JamCreator.Client.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Client\\JamCreator.Client.csproj",
+        "projectUniqueName": "/Users/deividas/Desktop/jamCreator/jamCreator/JamCreator/JamCreator.Client/JamCreator.Client.csproj",
         "projectName": "JamCreator.Client",
-        "projectPath": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Client\\JamCreator.Client.csproj",
-        "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Client\\obj\\",
+        "projectPath": "/Users/deividas/Desktop/jamCreator/jamCreator/JamCreator/JamCreator.Client/JamCreator.Client.csproj",
+        "packagesPath": "/Users/deividas/.nuget/packages/",
+        "outputPath": "/Users/deividas/Desktop/jamCreator/jamCreator/JamCreator/JamCreator.Client/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\User\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "/Users/deividas/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -83,7 +83,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/9.0.305/PortableRuntimeIdentifierGraph.json"
         }
       },
       "runtimes": {
