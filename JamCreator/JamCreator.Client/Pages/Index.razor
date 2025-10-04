@@ -1,0 +1,16 @@
+@page "/"
+
+@inject HttpClient Http
+<h3>Server says:</h3>
+
+<p>@serverMessage</p>
+
+@code {
+    private string serverMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await Http.GetFromJsonAsync<Dictionary<string,string>>("/api/hello");
+        serverMessage = response?["message"] ?? "No message";
+    }
+}
