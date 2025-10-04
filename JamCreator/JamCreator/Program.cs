@@ -1,5 +1,6 @@
 using JamCreator.Client.Pages;
 using JamCreator.Components;
+using System.Net.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,7 @@ else
 }
 
 app.UseHttpsRedirection();
+
 
 
 app.UseAntiforgery();

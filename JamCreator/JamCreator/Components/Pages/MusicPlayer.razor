@@ -1,0 +1,38 @@
+@page "/music"
+@using System.IO
+@using System
+
+<h3>Stream from File Example</h3>
+
+@if (audioBase64 == null)
+{
+    <p>Loading music...</p>
+}
+else
+{
+    <audio controls>
+        <source src="@audioBase64" type="audio/mpeg" />
+        Your browser does not support the audio element.
+    </audio>
+}
+
+@code {
+    private string? audioBase64;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Failo kelias (gali būti wwwroot/music/song.mp3 arba kitas)
+        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "music", "song.mp3");
+
+        if (File.Exists(filePath))
+        {
+            using Stream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            using var ms = new MemoryStream();
+            await fs.CopyToAsync(ms);
+            var bytes = ms.ToArray();
+
+            // Panaudojam stream ir konvertuojam į data URI
+            audioBase64 = $"data:audio/mpeg;base64,{Convert.ToBase64String(bytes)}";
+        }
+    }
+}
