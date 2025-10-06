@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "JamCreator.Client",
   "resources": {
-    "hash": "sha256-VvV4LMVq8+jqIFrhGdNb5b+a7uXqumpIxpDj5eJTMbo=",
+    "hash": "sha256-K843+WdTtLq23OxRrMnbLGRXOCzF6TaSDmMEMXjNISI=",
     "fingerprinting": {
       "Microsoft.AspNetCore.Authorization.z6jo10m0rd.wasm": "Microsoft.AspNetCore.Authorization.wasm",
       "Microsoft.AspNetCore.Components.65wbz7t8mt.wasm": "Microsoft.AspNetCore.Components.wasm",
@@ -201,8 +201,8 @@
       "icudt_CJK.tjcz0u77k5.dat": "icudt_CJK.dat",
       "icudt_EFIGS.tptq2av103.dat": "icudt_EFIGS.dat",
       "icudt_no_CJK.lfu7j35m59.dat": "icudt_no_CJK.dat",
-      "JamCreator.Client.2cxm5snmic.wasm": "JamCreator.Client.wasm",
-      "JamCreator.Client.lahefp1xlt.pdb": "JamCreator.Client.pdb"
+      "JamCreator.Client.d09roagirl.wasm": "JamCreator.Client.wasm",
+      "JamCreator.Client.fwodb3iew5.pdb": "JamCreator.Client.pdb"
     },
     "jsModuleNative": {
       "dotnet.native.9ih887ebfz.js": "sha256-oS7IRiQoVt9ThQ7Y2UM3XoeY0JqPD02cg9IvRdufn2w="
@@ -412,10 +412,10 @@
       "WindowsBase.vy2l5u79y6.wasm": "sha256-ufB9Mo5joMyUs3DzXWWBFFIZNEVrt6h9N5stYB6Oln4=",
       "mscorlib.xd6mv31d55.wasm": "sha256-1YSLR2eZt3ceALFV//vZUF2AloxVil3VlrW1zZYPSEI=",
       "netstandard.kaml52uspo.wasm": "sha256-HLEwBpLfzKw2/zGSVzHzFJxznCkt/WIjahrziiMrOpA=",
-      "JamCreator.Client.2cxm5snmic.wasm": "sha256-Qleggx126AJxOPX3+zpNkdPInJr1SfE7QxEEjz2H34M="
+      "JamCreator.Client.d09roagirl.wasm": "sha256-o5l6130LLxzzZocLrtYxh3t7zTdXwHe93U6210G54Qo="
     },
     "pdb": {
-      "JamCreator.Client.lahefp1xlt.pdb": "sha256-DRKz/w6vq2pEucvmJIpRuZ28k209ZbFDrMZsMDaiTAo="
+      "JamCreator.Client.fwodb3iew5.pdb": "sha256-TzYuWaSV9q8VmciYyoddzBAmlF3sDwipe1Vc5PDUXdU="
     }
   },
   "cacheBootResources": true,

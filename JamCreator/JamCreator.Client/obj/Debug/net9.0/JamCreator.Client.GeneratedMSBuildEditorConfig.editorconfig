@@ -32,12 +32,20 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ291bnRlci5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/User/Documents/VilniausUniversitetas/ProgramuSistemos/SoftwareEngineering/Projektas/jamCreator/JamCreator/JamCreator.Client/Pages/CreateJam.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ3JlYXRlSmFtLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/User/Documents/VilniausUniversitetas/ProgramuSistemos/SoftwareEngineering/Projektas/jamCreator/JamCreator/JamCreator.Client/Pages/Home.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSG9tZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/User/Documents/VilniausUniversitetas/ProgramuSistemos/SoftwareEngineering/Projektas/jamCreator/JamCreator/JamCreator.Client/Pages/Index.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSW5kZXgucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/User/Documents/VilniausUniversitetas/ProgramuSistemos/SoftwareEngineering/Projektas/jamCreator/JamCreator/JamCreator.Client/Pages/JoinJam.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSm9pbkphbS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/User/Documents/VilniausUniversitetas/ProgramuSistemos/SoftwareEngineering/Projektas/jamCreator/JamCreator/JamCreator.Client/Pages/Profile.razor]

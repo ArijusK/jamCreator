@@ -1,16 +1,24 @@
 @page "/"
 
-@inject HttpClient Http
-<h3>Server says:</h3>
+<PageTitle>JamCreator - Home</PageTitle>
 
-<p>@serverMessage</p>
+<div class="home-container">
+    <h1>Welcome to JamCreator 🎶</h1>
+    <p>Create or join live music jam sessions with your friends!</p>
+
+    <div class="button-grid">
+        <button class="jam-btn create" @onclick="GoToCreateJam">Create Jam</button>
+        <button class="jam-btn join" @onclick="GoToJoinJam">Join Jam</button>
+        <button class="jam-btn profile" @onclick="GoToProfile">Profile</button>
+        <button class="jam-btn about" @onclick="GoToAbout">About</button>
+    </div>
+</div>
 
 @code {
-    private string serverMessage = "";
+    private void GoToCreateJam() => Navigation.NavigateTo("/create-jam");
+    private void GoToJoinJam() => Navigation.NavigateTo("/join-jam");
+    private void GoToProfile() => Navigation.NavigateTo("/profile");
+    private void GoToAbout() => Navigation.NavigateTo("/about");
 
-    protected override async Task OnInitializedAsync()
-    {
-        var response = await Http.GetFromJsonAsync<Dictionary<string,string>>("/api/hello");
-        serverMessage = response?["message"] ?? "No message";
-    }
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
 }
