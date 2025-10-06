@@ -60,7 +60,6 @@ C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineeri
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\scopedcss\Components\Layout\NavMenu.razor.rz.scp.css
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\scopedcss\bundle\JamCreator.styles.css
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\scopedcss\projectbundle\JamCreator.bundle.scp.css
-C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\compressed\827utr0tdj-khy4lop6wu.gz
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\compressed\seobx4hyaa-t1cqhe9u97.gz
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\compressed\hf0x47yixf-c2jlpeoesf.gz
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\compressed\votqpmzs8a-sejl45xvog.gz
@@ -117,3 +116,4 @@ C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineeri
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\ref\JamCreator.dll
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\compressed\fovya42vcl-cxcqm8cjg4.gz
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\compressed\rfjbw7jr65-cxcqm8cjg4.gz
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\compressed\827utr0tdj-yc7bcvs1e9.gz

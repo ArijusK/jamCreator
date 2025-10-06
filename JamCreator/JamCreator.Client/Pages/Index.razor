@@ -1,4 +1,6 @@
 @page "/"
+@inject NavigationManager Nav
+
 
 <PageTitle>JamCreator - Home</PageTitle>
 
@@ -7,18 +9,9 @@
     <p>Create or join live music jam sessions with your friends!</p>
 
     <div class="button-grid">
-        <button class="jam-btn create" @onclick="GoToCreateJam">Create Jam</button>
-        <button class="jam-btn join" @onclick="GoToJoinJam">Join Jam</button>
-        <button class="jam-btn profile" @onclick="GoToProfile">Profile</button>
-        <button class="jam-btn about" @onclick="GoToAbout">About</button>
+        <NavLink class="btn" href="/create-jam">Create Jam</NavLink>
+        <NavLink class="btn" href="/join-jam">Join Jam</NavLink>
+        <NavLink class="btn" href="/profile">Profile</NavLink>
+        <NavLink class="btn" href="/about">About</NavLink>
     </div>
 </div>
-
-@code {
-    private void GoToCreateJam() => Navigation.NavigateTo("/create-jam");
-    private void GoToJoinJam() => Navigation.NavigateTo("/join-jam");
-    private void GoToProfile() => Navigation.NavigateTo("/profile");
-    private void GoToAbout() => Navigation.NavigateTo("/about");
-
-    [Inject] private NavigationManager Navigation { get; set; } = default!;
-}
