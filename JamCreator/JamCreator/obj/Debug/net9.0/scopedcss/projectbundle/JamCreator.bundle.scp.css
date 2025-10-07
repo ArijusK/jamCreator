@@ -1,0 +1,222 @@
+/* _content/JamCreator/Components/Layout/MainLayout.razor.rz.scp.css */
+.page[b-m5c786gbwt] {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+main[b-m5c786gbwt] {
+    flex: 1;
+}
+
+.sidebar[b-m5c786gbwt] {
+    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+}
+
+.top-row[b-m5c786gbwt] {
+    background-color: #f7f7f7;
+    border-bottom: 1px solid #d6d5d5;
+    justify-content: flex-end;
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+}
+
+    .top-row[b-m5c786gbwt]  a, .top-row[b-m5c786gbwt]  .btn-link {
+        white-space: nowrap;
+        margin-left: 1.5rem;
+        text-decoration: none;
+    }
+
+    .top-row[b-m5c786gbwt]  a:hover, .top-row[b-m5c786gbwt]  .btn-link:hover {
+        text-decoration: underline;
+    }
+
+    .top-row[b-m5c786gbwt]  a:first-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+@media (max-width: 640.98px) {
+    .top-row[b-m5c786gbwt] {
+        justify-content: space-between;
+    }
+
+    .top-row[b-m5c786gbwt]  a, .top-row[b-m5c786gbwt]  .btn-link {
+        margin-left: 0;
+    }
+}
+
+@media (min-width: 641px) {
+    .page[b-m5c786gbwt] {
+        flex-direction: row;
+    }
+
+    .sidebar[b-m5c786gbwt] {
+        width: 250px;
+        height: 100vh;
+        position: sticky;
+        top: 0;
+    }
+
+    .top-row[b-m5c786gbwt] {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    .top-row.auth[b-m5c786gbwt]  a:first-child {
+        flex: 1;
+        text-align: right;
+        width: 0;
+    }
+
+    .top-row[b-m5c786gbwt], article[b-m5c786gbwt] {
+        padding-left: 2rem !important;
+        padding-right: 1.5rem !important;
+    }
+}
+
+#blazor-error-ui[b-m5c786gbwt] {
+    color-scheme: light only;
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+    #blazor-error-ui .dismiss[b-m5c786gbwt] {
+        cursor: pointer;
+        position: absolute;
+        right: 0.75rem;
+        top: 0.5rem;
+    }
+/* _content/JamCreator/Components/Layout/NavMenu.razor.rz.scp.css */
+.navbar-toggler[b-8rodueui1a] {
+    appearance: none;
+    cursor: pointer;
+    width: 3rem;
+    height: 2.5rem;
+    position: absolute;
+    top: .5rem;
+    right: 1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background:
+      url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255,255,255,0.65%29' stroke-linecap='round' stroke-width='2' d='M5 8h20M5 15h20M5 22h20'/%3e%3c/svg%3e")
+      no-repeat center/1.5rem rgba(255,255,255,0.06);
+    transition: background-color .2s ease, box-shadow .2s ease;
+}
+
+.navbar-toggler:hover[b-8rodueui1a] { 
+    box-shadow: 0 0 0 3px rgba(29,185,84,.15); 
+}
+
+.navbar-toggler:checked[b-8rodueui1a] { 
+    background-color: rgba(255,255,255,0.18); 
+}
+
+.top-row[b-8rodueui1a] {
+    min-height: 3.5rem;
+    background: linear-gradient(135deg, #121212, #1a1a1a);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+}
+
+.navbar-brand[b-8rodueui1a] {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1db954;
+    letter-spacing: .3px;
+}
+
+.bi[b-8rodueui1a] {
+    display: inline-block;
+    position: relative;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-right: 0.75rem;
+    top: -1px;
+    background-size: cover;
+}
+
+.bi-house-door-fill-nav-menu[b-8rodueui1a] {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' class='bi bi-house-door-fill' viewBox='0 0 16 16'%3E%3Cpath d='M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5Z'/%3E%3C/svg%3E");
+}
+
+.bi-session-nav-menu[b-8rodueui1a] {
+    background-image: url("https://media.istockphoto.com/id/1244097573/vector/headphones-minimal-icon-with-sound-waves.jpg?s=612x612&w=0&k=20&c=OvARZEMYt_CM9M9-oJmMZ3O-HtEB-CAKqpGZPSA1acM=");
+}
+
+.bi-profile-nav-menu[b-8rodueui1a] {
+    background-image: url("https://static.vecteezy.com/system/resources/previews/005/544/718/non_2x/profile-icon-design-free-vector.jpg");
+}
+
+.bi-about-nav-menu[b-8rodueui1a] {
+    background-image: url("https://png.pngtree.com/png-vector/20190411/ourmid/pngtree-vector-information-icon-png-image_925431.jpg");
+}
+
+.nav-item[b-8rodueui1a] {
+    font-size: .95rem;
+    padding: 0;
+}
+
+    .nav-item:first-of-type[b-8rodueui1a] {
+        padding-top: .5rem;
+    }
+
+    .nav-item:last-of-type[b-8rodueui1a] {
+        padding-bottom: .5rem;
+    }
+
+    .nav-item[b-8rodueui1a]  .nav-link {
+    color: #dcdcdc;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    height: 2.75rem;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0 .9rem;
+    gap: .6rem;
+    transition: background-color .15s ease, color .15s ease, transform .05s ease;
+    }
+
+.nav-item[b-8rodueui1a]  a.active {
+    background: linear-gradient(90deg, rgba(29,185,84,.25), rgba(29,185,84,.08));
+    border: 1px solid rgba(29,185,84,.35);
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(29,185,84,.25) inset;
+}
+
+.nav-item[b-8rodueui1a]  .nav-link:hover {
+    background-color: rgba(255,255,255,0.06);
+    color: #ffffff;
+    transform: translateX(2px);
+}
+
+.nav-scrollable[b-8rodueui1a] {
+    display: none;
+    background: #161616;
+    border-right: 1px solid rgba(255,255,255,0.06);
+}
+
+@media (min-width: 641px) {
+    .navbar-toggler[b-8rodueui1a] { 
+        display: none; 
+    }
+    .nav-scrollable[b-8rodueui1a] {
+        display: block;
+        height: calc(100vh - 3.5rem);
+        overflow-y: auto;
+    }
+}

@@ -1,0 +1,6 @@
+@page "/session/{id}"
+<h1>Jam Session</h1>
+<p>Session ID: @id</p>
+@code {
+    [Parameter] public string id { get; set; } = string.Empty;
+}
