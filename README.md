@@ -25,9 +25,15 @@
 
   ## Alpha version goals:
 
-  * Capabiity for multiple members to connect ot the same live room.
+  * Capability for multiple members to connect to the same live room.
   * Begginings of the UI.
-  * Capability to play music together at the same time.
+
+
+  ***
+
+  ## Beta version goals:
+
+ * Capability to play music together at the same time.
 
   ***
 
@@ -42,6 +48,7 @@
 * Vilius Gylys
 
   >Zuvautojas
+  
 * Deividas Matonis
 
   >DuckWarrior0808
