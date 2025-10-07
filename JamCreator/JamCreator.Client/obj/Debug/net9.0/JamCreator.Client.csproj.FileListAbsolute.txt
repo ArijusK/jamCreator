@@ -1024,10 +1024,10 @@ C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineeri
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Client\obj\Debug\net9.0\JamCreator.Client.dll
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Client\obj\Debug\net9.0\JamCreator.Client.pdb
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Client\obj\Debug\net9.0\ref\JamCreator.Client.dll
-C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Client\bin\Debug\net9.0\wwwroot\_framework\JamCreator.Client.rmxvw3mg3k.wasm
-C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Client\bin\Debug\net9.0\wwwroot\_framework\JamCreator.Client.bw13mvsdli.pdb
-C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Client\bin\Debug\net9.0\wwwroot\_framework\JamCreator.Client.rmxvw3mg3k.wasm.gz
-C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Client\bin\Debug\net9.0\wwwroot\_framework\JamCreator.Client.bw13mvsdli.pdb.gz
-C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Client\obj\Debug\net9.0\compressed\wivppcbcgn-rmxvw3mg3k.gz
-C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Client\obj\Debug\net9.0\compressed\ko8qvsx0np-bw13mvsdli.gz
-C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Client\obj\Debug\net9.0\compressed\n5bthsky26-6rafmvende.gz
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Client\bin\Debug\net9.0\wwwroot\_framework\JamCreator.Client.cwv5eeeupk.wasm
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Client\bin\Debug\net9.0\wwwroot\_framework\JamCreator.Client.phu81ktxg6.pdb
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Client\bin\Debug\net9.0\wwwroot\_framework\JamCreator.Client.cwv5eeeupk.wasm.gz
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Client\bin\Debug\net9.0\wwwroot\_framework\JamCreator.Client.phu81ktxg6.pdb.gz
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Client\obj\Debug\net9.0\compressed\wivppcbcgn-cwv5eeeupk.gz
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Client\obj\Debug\net9.0\compressed\ko8qvsx0np-phu81ktxg6.gz
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Client\obj\Debug\net9.0\compressed\n5bthsky26-wnnxcctual.gz

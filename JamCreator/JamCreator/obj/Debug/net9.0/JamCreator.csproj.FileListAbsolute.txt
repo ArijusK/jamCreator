@@ -114,6 +114,6 @@ C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineeri
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\JamCreator.pdb
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\JamCreator.genruntimeconfig.cache
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\ref\JamCreator.dll
-C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\compressed\fovya42vcl-cxcqm8cjg4.gz
-C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\compressed\rfjbw7jr65-cxcqm8cjg4.gz
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\compressed\827utr0tdj-yc7bcvs1e9.gz
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\compressed\fovya42vcl-3rnge7wb64.gz
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator\obj\Debug\net9.0\compressed\rfjbw7jr65-3rnge7wb64.gz
