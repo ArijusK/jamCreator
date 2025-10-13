@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Client\\JamCreator.Client.csproj": {}
+    "C:\\Users\\pakaj\\OneDrive\\Dokumentai\\projekt\\jamCreator\\jamcreator\\JamCreator.Client\\JamCreator.Client.csproj": {}
   },
   "projects": {
-    "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Client\\JamCreator.Client.csproj": {
+    "C:\\Users\\pakaj\\OneDrive\\Dokumentai\\projekt\\jamCreator\\jamcreator\\JamCreator.Client\\JamCreator.Client.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Client\\JamCreator.Client.csproj",
+        "projectUniqueName": "C:\\Users\\pakaj\\OneDrive\\Dokumentai\\projekt\\jamCreator\\jamcreator\\JamCreator.Client\\JamCreator.Client.csproj",
         "projectName": "JamCreator.Client",
-        "projectPath": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Client\\JamCreator.Client.csproj",
-        "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Client\\obj\\",
+        "projectPath": "C:\\Users\\pakaj\\OneDrive\\Dokumentai\\projekt\\jamCreator\\jamcreator\\JamCreator.Client\\JamCreator.Client.csproj",
+        "packagesPath": "C:\\Users\\pakaj\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\pakaj\\OneDrive\\Dokumentai\\projekt\\jamCreator\\jamcreator\\JamCreator.Client\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\User\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\pakaj\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -45,6 +45,10 @@
           "targetAlias": "net9.0",
           "dependencies": {
             "Microsoft.AspNetCore.Components.WebAssembly": {
+              "target": "Package",
+              "version": "[9.0.9, )"
+            },
+            "Microsoft.AspNetCore.SignalR.Client": {
               "target": "Package",
               "version": "[9.0.9, )"
             },
