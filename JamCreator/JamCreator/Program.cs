@@ -1,11 +1,13 @@
 using JamCreator.Client.Pages;
 using JamCreator.Components;
-
+using JamCreator.Models;
 using System.Net.Http;
 using Microsoft.AspNetCore.Components;
 
 
 var builder = WebApplication.CreateBuilder(args);
+var sessions = new List<JamSession>();
+
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -19,9 +21,51 @@ builder.Services.AddScoped(sp =>
     new HttpClient { BaseAddress = new Uri(sp.GetRequiredService<NavigationManager>().BaseUri) });
 
 
+
+
 var app = builder.Build();
 
+app.MapPost("/api/sessions", HandleCreateSession);
+app.MapGet("/api/sessions/{id}", HandleGetSession);
 
+IResult HandleCreateSession(JamCreatorUser jam)
+{
+    if (string.IsNullOrWhiteSpace(jam.RoomName) || jam.MaxPeople is null)
+    {
+        var errors = new Dictionary<string, string[]>
+        {
+            ["RoomName"] = new[] { "RoomName is required." },
+            ["PeopleSize"] = new[] { "PeopleSize is required." }
+        };
+        return Results.ValidationProblem(errors);
+    }
+
+    var session = new JamSession
+    {
+        Id = Guid.NewGuid().ToString("N"),
+        RoomName = jam.RoomName!,
+        MaxPeople = jam.MaxPeople.Value,
+        Genre = jam.Genre,
+        Description = jam.Description,
+        IsPrivate = jam.IsPrivate,
+        Mood = jam.Mood,
+        DurationMinutes = jam.DurationMinutes,
+        AllowSkipVote = jam.AllowSkipVote
+    };
+
+    sessions.Add(session);
+    return Results.Created($"/api/sessions/{session.Id}", session);
+}
+
+IResult HandleGetSession(string id)
+{
+    var found = sessions.FirstOrDefault(x => x.Id == id);
+    if (found == null)
+    {
+        return Results.NotFound();
+    }
+    return Results.Ok(found);
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
