@@ -1,2 +1,46 @@
 @page "/create-jam"
+@rendermode InteractiveWebAssembly
+@using System.ComponentModel.DataAnnotations
+@inject ILogger<CreateJam> Logger
+
 <h3>Create Jam Page</h3>
+
+<EditForm Model="Model" OnSubmit="Submit" FormName="CreateJamRoom">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label>
+            Room name:
+            <InputText @bind-Value="Model!.RoomName" />
+        </label>
+        <ValidationMessage For="() => Model!.RoomName" />
+    </div>
+
+    <div style="margin-top:1rem">
+        <button type="submit">Create</button>
+    </div>
+</EditForm>
+
+
+@code {
+    // Form model will be supplied from the form post
+    [SupplyParameterFromForm]
+    private JamCreateModel? Model { get; set; }
+
+    // Ensure we have a model instance when the page first renders
+    protected override void OnInitialized() => Model ??= new();
+
+    // This runs when you click "Create"
+    private void Submit()
+    {
+        Logger.LogInformation("RoomName = {RoomName}", Model?.RoomName);
+        // Later: POST to /api/sessions with Model.RoomName
+    }
+
+    public class JamCreateModel
+    {
+        [Required, StringLength(60)]
+        public string? RoomName { get; set; }
+    }
+}
