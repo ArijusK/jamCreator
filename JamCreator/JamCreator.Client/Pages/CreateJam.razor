@@ -6,20 +6,91 @@
 <h3>Create Jam Page</h3>
 
 <EditForm Model="Model" OnSubmit="Submit" FormName="CreateJamRoom">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+    <DataAnnotationsValidator/>
+    <ValidationSummary/>
 
-    <div>
-        <label>
-            Room name:
-            <InputText @bind-Value="Model!.RoomName" />
-        </label>
-        <ValidationMessage For="() => Model!.RoomName" />
+    <div class="form-group">
+        <label>Room name:</label>
+        <InputText @bind-Value="Model!.RoomName" class="form-control"/>
+        <ValidationMessage For="() => Model!.RoomName"/>
+    </div>
+
+    <div class="form-group">
+        <label>Max people</label>
+        <InputSelect @bind-Value="Model!.PeopleSize" class="form-control" TValue="int?">
+            <option value="">Select</option>
+            @foreach (var n in PeopleOptions) {
+                <option value="@n">@n</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="() => Model!.PeopleSize"/>
+    </div>
+
+    <div class="form-group">
+        <label>Genre</label>
+        <InputText @bind-Value="Model!.Genre" class="form-control" placeholder="e.g., Jazz, Rock, EDM" />
+        <ValidationMessage For="() => Model!.Genre" />
+    </div>
+
+    <div class="form-group">
+        <label>Description</label>
+        <InputTextArea @bind-Value="Model!.Description" class="form-control" rows="3" />
+        <ValidationMessage For="() => Model!.Description" />
+    </div>
+
+    <div class="form-group">
+        <label>Visibility</label>
+        <InputSelect @bind-Value="Model!.IsPrivate" class="form-control" TValue="bool">
+            <option value="false">Public</option>
+            <option value="true">Private</option>
+        </InputSelect>
+        <ValidationMessage For="() => Model!.IsPrivate" />
+    </div>
+
+    @if (Model?.IsPrivate == true)
+    {
+        <div class="form-group">
+            <label>Password</label>
+            <InputText @bind-Value="Model!.Password" class="form-control" type="password" />
+            <ValidationMessage For="() => Model!.Password" />
+        </div>
+    }
+
+    <div class="form-group">
+        <label>Mood</label>
+        <InputSelect @bind-Value="Model!.Mood" class="form-control">
+            @foreach (var m in MoodOptions) { <option value="@m">@m</option> }
+        </InputSelect>
+        <ValidationMessage For="() => Model!.Mood" />
+    </div>
+
+    <div class="form-group">
+        <label>Duration</label>
+        <InputSelect @bind-Value="Model!.DurationMinutes" class="form-control" TValue="int">
+            @foreach (var d in DurationOptions) { <option value="@d">@d min</option> }
+        </InputSelect>
+        <ValidationMessage For="() => Model!.DurationMinutes" />
+    </div>
+
+    <div class="form-group">
+        <InputCheckbox @bind-Value="Model!.AllowSkipVoting" />
+        <label>Allow song skip voting</label>
     </div>
 
     <div style="margin-top:1rem">
         <button type="submit">Create</button>
     </div>
+
+    <!-- temporary debug; remove later -->
+    <pre style="opacity:.7">
+Name: @(Model?.RoomName ?? "null")
+Size: @(Model?.PeopleSize?.ToString() ?? "null")
+Private: @Model?.IsPrivate
+Pwd: @(string.IsNullOrWhiteSpace(Model?.Password) ? "(empty)" : "***")
+Mood: @(Model?.Mood ?? "null")
+Duration: @Model?.DurationMinutes
+Skip: @Model?.AllowSkipVoting
+    </pre>
 </EditForm>
 
 
@@ -31,16 +102,55 @@
     // Ensure we have a model instance when the page first renders
     protected override void OnInitialized() => Model ??= new();
 
+    private readonly int[] PeopleOptions = { 1, 2, 3, 4 };
+    private readonly string[] MoodOptions = { "Chill", "Energetic", "Groovy", "Ambient" };
+    private readonly int[] DurationOptions = { 30, 60, 90, 120 };
+
     // This runs when you click "Create"
     private void Submit()
     {
-        Logger.LogInformation("RoomName = {RoomName}", Model?.RoomName);
-        // Later: POST to /api/sessions with Model.RoomName
+        Logger.LogInformation(
+            "CreateJam: {Name} size={Size} private={Private} mood={Mood} duration={Duration} skip={Skip}",
+            Model?.RoomName, Model?.PeopleSize, Model?.IsPrivate, Model?.Mood, Model?.DurationMinutes, Model?.AllowSkipVoting
+        );        // Later: POST to /api/sessions with Model.RoomName
     }
 
-    public class JamCreateModel
+    public class JamCreateModel : IValidatableObject
     {
         [Required, StringLength(60)]
         public string? RoomName { get; set; }
+
+        [Required, Range(1, 4)]
+        public int? PeopleSize { get; set; }
+
+        [StringLength(40)]
+        public string? Genre { get; set; }
+
+        [StringLength(200)]
+        public string? Description { get; set; }
+
+        public bool IsPrivate { get; set; }
+
+        [StringLength(40)]
+        public string? Password { get; set; }  // required only if IsPrivate
+
+        [Required, StringLength(24)]
+        public string? Mood { get; set; } = "Chill";
+
+        [Range(15, 240)]
+        public int DurationMinutes { get; set; } = 60;
+
+        public bool AllowSkipVoting { get; set; } = true;
+
+        // Conditional validation: if Private, require Password
+        public IEnumerable<ValidationResult> Validate(ValidationContext _)
+        {
+            if (IsPrivate && string.IsNullOrWhiteSpace(Password))
+            {
+                yield return new ValidationResult(
+                    "Password is required for private sessions.",
+                    new[] { nameof(Password) });
+            }
+        }
     }
 }
