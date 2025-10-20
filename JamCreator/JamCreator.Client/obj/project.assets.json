@@ -2125,19 +2125,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\pakaj\\.nuget\\packages\\": {}
+    "C:\\Users\\deivi\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\pakaj\\OneDrive\\Dokumentai\\projekt\\jamCreator\\jamcreator\\JamCreator.Client\\JamCreator.Client.csproj",
+      "projectUniqueName": "C:\\Users\\deivi\\Documents\\projektas\\jamCreator\\jamcreator\\JamCreator.Client\\JamCreator.Client.csproj",
       "projectName": "JamCreator.Client",
-      "projectPath": "C:\\Users\\pakaj\\OneDrive\\Dokumentai\\projekt\\jamCreator\\jamcreator\\JamCreator.Client\\JamCreator.Client.csproj",
-      "packagesPath": "C:\\Users\\pakaj\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\pakaj\\OneDrive\\Dokumentai\\projekt\\jamCreator\\jamcreator\\JamCreator.Client\\obj\\",
+      "projectPath": "C:\\Users\\deivi\\Documents\\projektas\\jamCreator\\jamcreator\\JamCreator.Client\\JamCreator.Client.csproj",
+      "packagesPath": "C:\\Users\\deivi\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\deivi\\Documents\\projektas\\jamCreator\\jamcreator\\JamCreator.Client\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\pakaj\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\deivi\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"

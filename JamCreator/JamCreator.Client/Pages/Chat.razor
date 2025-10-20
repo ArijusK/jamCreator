@@ -2,53 +2,145 @@
 @page "/chat"
 @using Microsoft.AspNetCore.SignalR.Client
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 
-@if (hubConnection?.State != HubConnectionState.Connected)
-{
-    <p>Connecting to chat...</p>
-}
+<div class="chat-shell">
+  <div class="chat-header">
+    <span class="logo-dot"></span>
+    <h2>Chat</h2>
+    <div class="spacer"></div>
 
-<input @bind="user" placeholder="Name" />
-<input @bind="message" placeholder="Message" />
-<button @onclick="Send">Send</button>
-
-<div style="height:200px;overflow-y:auto;border:1px solid #ccc;padding:8px;">
-    @foreach (var msg in messages)
+    @if (NameLocked)
     {
-        <div>@msg</div>
+      <div class="name-pill" title="Click to change" @onclick="UnlockName">@Name</div>
     }
+  </div>
+
+  <div id="chatScroll" class="chat-messages">
+    @if (Messages.Count == 0)
+    {
+      <div class="empty">No messages yet. Be the first to say hi 👋</div>
+    }
+    else
+    {
+      @foreach (var m in Messages)
+      {
+        var mine = string.Equals(m.User, Name, StringComparison.OrdinalIgnoreCase);
+        <div class="msg @(mine ? "mine" : "theirs")">
+          <div class="meta">
+            <span class="user">@m.User</span>
+            <span class="time">@m.Timestamp.ToString("HH:mm")</span>
+          </div>
+          <div class="bubble">@m.Text</div>
+        </div>
+      }
+    }
+  </div>
+
+  <div class="chat-inputbar">
+    <input id="nameInput"
+           class="name"
+           placeholder="Your name"
+           @bind="Name"
+           @bind:event="oninput"
+           disabled="@NameLocked" />
+
+    <input id="messageInput"
+           class="message"
+           placeholder="Type a message…"
+           @bind="Message"
+           @bind:event="oninput"
+           @onkeydown="HandleEnter"
+           />
+
+    <button class="send" @onclick="Send" disabled="@IsSendDisabled">Send</button>
+  </div>
 </div>
 
 @code {
-    HubConnection? hubConnection;
-    string? user;
-    string? message;
-    List<string> messages = new();
+    private HubConnection? hubConnection;
+
+    private string? Name { get; set; }
+    private bool NameLocked { get; set; }
+    private string? Message { get; set; }
+
+    private List<ChatMsg> Messages { get; } = new();
+
+    private bool IsSendDisabled => string.IsNullOrWhiteSpace(Message);
 
     protected override async Task OnInitializedAsync()
     {
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/chathub"))
+            .WithAutomaticReconnect()
             .Build();
 
-        hubConnection.On<string, string>("ReceiveMessage", (user, message) =>
+        
+        hubConnection.On<string, string>("ReceiveMessage", (user, text) =>
         {
-            messages.Add($"{user}: {message}");
-            StateHasChanged();
+            
+            Messages.Add(new ChatMsg(user, text, DateTime.Now));
+            InvokeAsync(async () =>
+            {
+                StateHasChanged();
+                await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
+            });
         });
 
         await hubConnection.StartAsync();
     }
 
-    async Task Send()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+{
+    if (firstRender)
     {
-    if (hubConnection is not null 
-        && hubConnection.State == HubConnectionState.Connected
-        && !string.IsNullOrWhiteSpace(user)
-        && !string.IsNullOrWhiteSpace(message))
+        await JS.InvokeVoidAsync("chatHelpers.focus", "nameInput");
+    }
+
+    await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
+}
+
+
+    private async Task Send()
     {
-        await hubConnection.SendAsync("SendMessage", user, message);
-        message = "";
+        if (string.IsNullOrWhiteSpace(Message))
+            return;
+
+       
+        if (!NameLocked)
+        {
+            Name = string.IsNullOrWhiteSpace(Name) ? "Guest" : Name!.Trim();
+            NameLocked = true;
+            await JS.InvokeVoidAsync("chatHelpers.set", "chat.username", Name);
+            StateHasChanged();
+        }
+
+        var text = Message!.Trim();
+        var user = Name!;
+
+       
+        Messages.Add(new ChatMsg(user, text, DateTime.Now));
+        Message = string.Empty;
+
+        await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
+        await JS.InvokeVoidAsync("chatHelpers.focus", "messageInput");
+
+       
+        if (hubConnection is not null)
+            await hubConnection.SendAsync("SendMessage", user, text);
     }
+
+    private async Task HandleEnter(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !IsSendDisabled)
+            await Send();
     }
+
+    private void UnlockName()
+    {
+        NameLocked = false;
+        _ = JS.InvokeVoidAsync("chatHelpers.focus", "nameInput");
+    }
+
+    private record ChatMsg(string User, string Text, DateTime Timestamp);
 }
