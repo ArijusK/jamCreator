@@ -9,6 +9,8 @@
       "JamCreator/1.0.0": {
         "dependencies": {
           "JamCreator.Client": "1.0.0",
+          "JamCreator.Shared": "1.0.0",
+          "Microsoft.AspNetCore.Components.Web": "9.0.9",
           "Microsoft.AspNetCore.Components.WebAssembly.Server": "9.0.9"
         },
         "runtime": {
@@ -277,10 +279,19 @@
       },
       "JamCreator.Client/1.0.0": {
         "dependencies": {
+          "JamCreator.Shared": "1.0.0",
           "Microsoft.AspNetCore.Components.WebAssembly": "9.0.9"
         },
         "runtime": {
           "JamCreator.Client.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "JamCreator.Shared/1.0.0": {
+        "runtime": {
+          "JamCreator.Shared.dll": {
             "assemblyVersion": "1.0.0.0",
             "fileVersion": "1.0.0.0"
           }
@@ -463,6 +474,11 @@
       "hashPath": "microsoft.jsinterop.webassembly.9.0.9.nupkg.sha512"
     },
     "JamCreator.Client/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "JamCreator.Shared/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

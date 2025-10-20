@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "JamCreator.Client",
   "resources": {
-    "hash": "sha256-SK6sONBX4ywJyoLPOOLtOAPiutZfdjITwViLvfELRI8=",
+    "hash": "sha256-lC7uyz5MfM71TWphrgUPrrYZtjq28L5U26T+IOjA1As=",
     "fingerprinting": {
       "Microsoft.AspNetCore.Authorization.z6jo10m0rd.wasm": "Microsoft.AspNetCore.Authorization.wasm",
       "Microsoft.AspNetCore.Components.65wbz7t8mt.wasm": "Microsoft.AspNetCore.Components.wasm",
@@ -201,8 +201,10 @@
       "icudt_CJK.tjcz0u77k5.dat": "icudt_CJK.dat",
       "icudt_EFIGS.tptq2av103.dat": "icudt_EFIGS.dat",
       "icudt_no_CJK.lfu7j35m59.dat": "icudt_no_CJK.dat",
-      "JamCreator.Client.0o44bluynr.wasm": "JamCreator.Client.wasm",
-      "JamCreator.Client.ianldgbyiw.pdb": "JamCreator.Client.pdb"
+      "JamCreator.Shared.pa12nwsxkx.wasm": "JamCreator.Shared.wasm",
+      "JamCreator.Shared.m08af7pbbt.pdb": "JamCreator.Shared.pdb",
+      "JamCreator.Client.4m8u8jdmdx.wasm": "JamCreator.Client.wasm",
+      "JamCreator.Client.v4akjve8ez.pdb": "JamCreator.Client.pdb"
     },
     "jsModuleNative": {
       "dotnet.native.9ih887ebfz.js": "sha256-oS7IRiQoVt9ThQ7Y2UM3XoeY0JqPD02cg9IvRdufn2w="
@@ -412,18 +414,16 @@
       "WindowsBase.vy2l5u79y6.wasm": "sha256-ufB9Mo5joMyUs3DzXWWBFFIZNEVrt6h9N5stYB6Oln4=",
       "mscorlib.xd6mv31d55.wasm": "sha256-1YSLR2eZt3ceALFV//vZUF2AloxVil3VlrW1zZYPSEI=",
       "netstandard.kaml52uspo.wasm": "sha256-HLEwBpLfzKw2/zGSVzHzFJxznCkt/WIjahrziiMrOpA=",
-      "JamCreator.Client.0o44bluynr.wasm": "sha256-oK8nVaVc+bta0wPZmmXfknLapTSXTU0E8duyM7f8doQ="
+      "JamCreator.Shared.pa12nwsxkx.wasm": "sha256-75V4TcpumIGmma0323KEVb+6NsG/OfaVf7z9mq5/At8=",
+      "JamCreator.Client.4m8u8jdmdx.wasm": "sha256-5PTEof0TodSGt2wtXG8Ue7e0Gb1U2kuF28BxjfWU/YU="
     },
     "pdb": {
-      "JamCreator.Client.ianldgbyiw.pdb": "sha256-KgaDX+8lMTsvjkCVB24dt7VyBzu5uOGP8z5X24S0YZM="
+      "JamCreator.Shared.m08af7pbbt.pdb": "sha256-6n1Jmiyj7jiSNULVjXBnasWCU45Omimzdza2af8F9wM=",
+      "JamCreator.Client.v4akjve8ez.pdb": "sha256-seDRq2bSKNbVRVHATDTE2zi/l1ZKc014wyC9HgDNdZQ="
     }
   },
   "cacheBootResources": true,
   "debugLevel": -1,
-  "appsettings": [
-    "../appsettings.Development.json",
-    "../appsettings.json"
-  ],
   "globalizationMode": "sharded",
   "extensions": {
     "blazor": {}

@@ -1,13 +1,17 @@
 @page "/create-jam"
-@rendermode InteractiveWebAssembly
-@using System.ComponentModel.DataAnnotations
+@using System.Net.Http.Json
+@using JamCreator.Shared.Models
+@using JamCreator.Client.Services 
+@inject JamSessionService JamSessionService
+@inject HttpClient Http
 @inject ILogger<CreateJam> Logger
+@inject NavigationManager Navigation
 
-<h3>Create Jam Page</h3>
+<h3>Create Jam</h3>
 
-<EditForm Model="Model" OnSubmit="Submit" FormName="CreateJamRoom">
-    <DataAnnotationsValidator/>
-    <ValidationSummary/>
+<EditForm Model="Model" OnValidSubmit="Submit" FormName="CreateJamForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
 
     <div class="form-group">
         <label>Room name:</label>
@@ -17,13 +21,14 @@
 
     <div class="form-group">
         <label>Max people</label>
-        <InputSelect @bind-Value="Model!.PeopleSize" class="form-control" TValue="int?">
+        <InputSelect @bind-Value="Model!.MaxPeople" class="form-control" TValue="int?">
             <option value="">Select</option>
-            @foreach (var n in PeopleOptions) {
+            @foreach (var n in PeopleOptions)
+            {
                 <option value="@n">@n</option>
             }
         </InputSelect>
-        <ValidationMessage For="() => Model!.PeopleSize"/>
+        <ValidationMessage For="() => Model!.MaxPeople"/>
     </div>
 
     <div class="form-group">
@@ -59,7 +64,10 @@
     <div class="form-group">
         <label>Mood</label>
         <InputSelect @bind-Value="Model!.Mood" class="form-control">
-            @foreach (var m in MoodOptions) { <option value="@m">@m</option> }
+            @foreach (var m in MoodOptions)
+            {
+                <option value="@m">@m</option>
+            }
         </InputSelect>
         <ValidationMessage For="() => Model!.Mood" />
     </div>
@@ -67,90 +75,59 @@
     <div class="form-group">
         <label>Duration</label>
         <InputSelect @bind-Value="Model!.DurationMinutes" class="form-control" TValue="int">
-            @foreach (var d in DurationOptions) { <option value="@d">@d min</option> }
+            @foreach (var d in DurationOptions)
+            {
+                <option value="@d">@d min</option>
+            }
         </InputSelect>
         <ValidationMessage For="() => Model!.DurationMinutes" />
     </div>
 
     <div class="form-group">
-        <InputCheckbox @bind-Value="Model!.AllowSkipVoting" />
+        <InputCheckbox @bind-Value="Model!.AllowSkipVote" />
         <label>Allow song skip voting</label>
     </div>
 
-    <div style="margin-top:1rem">
-        <button type="submit">Create</button>
-    </div>
-
-    <!-- temporary debug; remove later -->
-    <pre style="opacity:.7">
-Name: @(Model?.RoomName ?? "null")
-Size: @(Model?.PeopleSize?.ToString() ?? "null")
-Private: @Model?.IsPrivate
-Pwd: @(string.IsNullOrWhiteSpace(Model?.Password) ? "(empty)" : "***")
-Mood: @(Model?.Mood ?? "null")
-Duration: @Model?.DurationMinutes
-Skip: @Model?.AllowSkipVoting
-    </pre>
+    <button type="submit" class="btn btn-success mt-2">Create Jam</button>
 </EditForm>
 
+@if (CreatedSession != null)
+{
+    <div class="alert alert-success mt-3">
+        <strong>Created Session!</strong><br />
+        ID: @CreatedSession.Id<br />
+        Room: @CreatedSession.RoomName<br />
+        Mood: @CreatedSession.Mood<br />
+        MaxPeople: @CreatedSession.MaxPeople<br />
+        Genre: @CreatedSession.Genre<br />
+        Description: @CreatedSession.Description<br />
+        IsPrivate: @CreatedSession.IsPrivate<br />
+        Password: @CreatedSession.Password<br />
+        DurationMinutes: @CreatedSession.DurationMinutes<br />
+        AllowSkipVote: @CreatedSession.AllowSkipVote
+    </div>
+}
 
 @code {
-    // Form model will be supplied from the form post
-    [SupplyParameterFromForm]
-    private JamCreateModel? Model { get; set; }
+    private JamCreatorUser Model { get; set; } = new();
+    private JamSessionModel? CreatedSession;
 
-    // Ensure we have a model instance when the page first renders
-    protected override void OnInitialized() => Model ??= new();
-
-    private readonly int[] PeopleOptions = { 1, 2, 3, 4 };
+    private readonly int[] PeopleOptions = { 2, 3, 4 };
     private readonly string[] MoodOptions = { "Chill", "Energetic", "Groovy", "Ambient" };
     private readonly int[] DurationOptions = { 30, 60, 90, 120 };
 
-    // This runs when you click "Create"
-    private void Submit()
+    private async Task Submit()
     {
-        Logger.LogInformation(
-            "CreateJam: {Name} size={Size} private={Private} mood={Mood} duration={Duration} skip={Skip}",
-            Model?.RoomName, Model?.PeopleSize, Model?.IsPrivate, Model?.Mood, Model?.DurationMinutes, Model?.AllowSkipVoting
-        );        // Later: POST to /api/sessions with Model.RoomName
+    try
+    {
+        CreatedSession = await JamSessionService.CreateSessionAsync(Model);
+        Logger.LogInformation("Created session {id}", CreatedSession.Id);
+
+      //  Navigation.NavigateTo("/join-jam");
     }
-
-    public class JamCreateModel : IValidatableObject
+    catch (Exception ex)
     {
-        [Required, StringLength(60)]
-        public string? RoomName { get; set; }
-
-        [Required, Range(1, 4)]
-        public int? PeopleSize { get; set; }
-
-        [StringLength(40)]
-        public string? Genre { get; set; }
-
-        [StringLength(200)]
-        public string? Description { get; set; }
-
-        public bool IsPrivate { get; set; }
-
-        [StringLength(40)]
-        public string? Password { get; set; }  // required only if IsPrivate
-
-        [Required, StringLength(24)]
-        public string? Mood { get; set; } = "Chill";
-
-        [Range(15, 240)]
-        public int DurationMinutes { get; set; } = 60;
-
-        public bool AllowSkipVoting { get; set; } = true;
-
-        // Conditional validation: if Private, require Password
-        public IEnumerable<ValidationResult> Validate(ValidationContext _)
-        {
-            if (IsPrivate && string.IsNullOrWhiteSpace(Password))
-            {
-                yield return new ValidationResult(
-                    "Password is required for private sessions.",
-                    new[] { nameof(Password) });
-            }
-        }
+        Logger.LogError(ex, "Failed to create session");
+    }
     }
 }

@@ -1,2 +1,75 @@
 @page "/join-jam"
-<h3>Join Jam Page</h3>
+@inject ILogger<JoinJam> Logger
+@using JamCreator.Shared.Models
+@using System.ComponentModel.DataAnnotations
+@using JamCreator.Client.Services 
+@inject JamSessionService JamSessionService
+@inject ILogger<JoinJam> Logger
+
+<h3>Join a Jam</h3>
+
+<EditForm Model="@Model" OnValidSubmit="Submit" FormName="JoinJamForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label>Pick a session:</label>
+        <InputSelect @bind-Value="Model.SessionId" class="form-control">
+            <option value="">Select a jam</option>
+            @foreach (var s in AllSessions)
+            {
+                <option value="@s.Id">@s.RoomName (@s.Mood)</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="form-group">
+        <label>Password (if required):</label>
+        <InputText @bind-Value="Model.Password" class="form-control" type="password" />
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-2">Join Jam</button>
+</EditForm>
+
+@if (JoinedSessions.Any())
+{
+    <h4 class="mt-4">Joined Sessions:</h4>
+    <ul>
+        @foreach (var s in JoinedSessions)
+        {
+            <li><strong>@s.RoomName</strong> — Mood: @s.Mood (ID: @s.Id)</li>
+        }
+    </ul>
+}
+
+@code {
+    private JoinModel Model { get; set; } = new();
+    private List<JamSessionModel> JoinedSessions = new();
+    private List<JamSessionModel> AllSessions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            AllSessions = await JamSessionService.GetAllSessionsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to fetch all sessions");
+        }
+    }
+
+    private async Task Submit()
+    {
+        try
+        {
+            var session = await JamSessionService.JoinSessionAsync(Model.SessionId!, Model.Password);
+            JoinedSessions.Add(session);
+
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to join jam");
+        }
+    }
+}

@@ -426,6 +426,16 @@
           "build/Microsoft.NET.Sdk.WebAssembly.Pack.props": {},
           "build/Microsoft.NET.Sdk.WebAssembly.Pack.targets": {}
         }
+      },
+      "JamCreator.Shared/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "compile": {
+          "bin/placeholder/JamCreator.Shared.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/JamCreator.Shared.dll": {}
+        }
       }
     },
     "net9.0/browser-wasm": {
@@ -852,6 +862,16 @@
         "build": {
           "build/Microsoft.NET.Sdk.WebAssembly.Pack.props": {},
           "build/Microsoft.NET.Sdk.WebAssembly.Pack.targets": {}
+        }
+      },
+      "JamCreator.Shared/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "compile": {
+          "bin/placeholder/JamCreator.Shared.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/JamCreator.Shared.dll": {}
         }
       }
     }
@@ -1566,40 +1586,58 @@
         "tools/net9.0/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll",
         "tools/net9.0/Microsoft.NET.WebAssembly.Webcil.dll"
       ]
+    },
+    "JamCreator.Shared/1.0.0": {
+      "type": "project",
+      "path": "../JamCreator.Shared/JamCreator.Shared.csproj",
+      "msbuildProject": "../JamCreator.Shared/JamCreator.Shared.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net9.0": [
+      "JamCreator.Shared >= 1.0.0",
       "Microsoft.AspNetCore.Components.WebAssembly >= 9.0.9",
       "Microsoft.NET.ILLink.Tasks >= 9.0.9",
       "Microsoft.NET.Sdk.WebAssembly.Pack >= 9.0.9"
     ]
   },
   "packageFolders": {
-    "C:\\Users\\User\\.nuget\\packages\\": {}
+    "C:\\Users\\Administrator\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Client\\JamCreator.Client.csproj",
+      "projectUniqueName": "C:\\Users\\Administrator\\Documents\\3kursas\\PSI12025\\jamCreator\\jamCreator\\JamCreator.Client\\JamCreator.Client.csproj",
       "projectName": "JamCreator.Client",
-      "projectPath": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Client\\JamCreator.Client.csproj",
-      "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Client\\obj\\",
+      "projectPath": "C:\\Users\\Administrator\\Documents\\3kursas\\PSI12025\\jamCreator\\jamCreator\\JamCreator.Client\\JamCreator.Client.csproj",
+      "packagesPath": "C:\\Users\\Administrator\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Administrator\\Documents\\3kursas\\PSI12025\\jamCreator\\jamCreator\\JamCreator.Client\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "C:\\Users\\User\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\Administrator\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
       ],
       "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "C:\\Users\\Administrator\\Documents\\3kursas\\PSI12025\\jamCreator\\jamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {
+              "projectPath": "C:\\Users\\Administrator\\Documents\\3kursas\\PSI12025\\jamCreator\\jamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj"
+            }
+          }
         }
       },
       "warningProperties": {

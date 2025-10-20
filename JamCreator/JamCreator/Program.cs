@@ -1,97 +1,80 @@
-using JamCreator.Client.Pages;
-using JamCreator.Components;
-using JamCreator.Models;
-using System.Net.Http;
+using System;
+using System.Collections.Concurrent;
+using JamCreator.Shared.Models;
 using Microsoft.AspNetCore.Components;
+using JamCreator.Client;
+using JamCreator.Client.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
-var sessions = new List<JamSession>();
 
-
-// Add services to the container.
-builder.Services.AddRazorComponents()
-    .AddInteractiveWebAssemblyComponents();
-
-// Basic HttpClient for components rendered via the server
+// Razor + WebAssembly
+builder.Services.AddRazorComponents().AddInteractiveWebAssemblyComponents();
 builder.Services.AddHttpClient();
+builder.Services.AddSingleton<ConcurrentDictionary<string, JamSessionModel>>();
+builder.Services.AddScoped<JamSessionService>();
+builder.Services.AddRazorPages();
+builder.Services.AddServerSideBlazor();
 
-// BaseAddress = current app origin (so you can call "api/..." with a relative URL)
-builder.Services.AddScoped(sp =>
-    new HttpClient { BaseAddress = new Uri(sp.GetRequiredService<NavigationManager>().BaseUri) });
 
-
-
+//builder.Services.AddHttpClient<JamSessionService>(client =>
+//{
+//  client.BaseAddress = new Uri("https://localhost:5001"); // <-- your server URL
+//});
 
 var app = builder.Build();
 
-app.MapPost("/api/sessions", HandleCreateSession);
-app.MapGet("/api/sessions/{id}", HandleGetSession);
+//var sessions = app.Services.GetRequiredService<ConcurrentDictionary<string, JamSessionModel>>();
 
-IResult HandleCreateSession(JamCreatorUser jam)
+// In-memory storage
+var sessions = new List<JamSessionModel>();
+
+// Create a session
+app.MapPost("/api/sessions", (JamCreatorUser jam) =>
 {
-    if (string.IsNullOrWhiteSpace(jam.RoomName) || jam.MaxPeople is null)
-    {
-        var errors = new Dictionary<string, string[]>
-        {
-            ["RoomName"] = new[] { "RoomName is required." },
-            ["PeopleSize"] = new[] { "PeopleSize is required." }
-        };
-        return Results.ValidationProblem(errors);
-    }
-
-    var session = new JamSession
+    var session = new JamSessionModel
     {
         Id = Guid.NewGuid().ToString("N"),
-        RoomName = jam.RoomName!,
-        MaxPeople = jam.MaxPeople.Value,
+        RoomName = jam.RoomName,
+        MaxPeople = jam.MaxPeople ?? 4,
         Genre = jam.Genre,
+        Mood = jam.Mood,
         Description = jam.Description,
         IsPrivate = jam.IsPrivate,
-        Mood = jam.Mood,
+        Password = jam.Password,
         DurationMinutes = jam.DurationMinutes,
         AllowSkipVote = jam.AllowSkipVote
     };
 
     sessions.Add(session);
     return Results.Created($"/api/sessions/{session.Id}", session);
-}
+});
 
-IResult HandleGetSession(string id)
+// Get all sessions
+app.MapGet("/api/sessions", () => Results.Ok(sessions));
+
+
+// Get session by ID
+app.MapGet("/api/sessions/{id}", (string id, string? password) =>
 {
-    var found = sessions.FirstOrDefault(x => x.Id == id);
-    if (found == null)
-    {
-        return Results.NotFound();
-    }
-    return Results.Ok(found);
-}
+    var session = sessions.FirstOrDefault(s => s.Id == id);
+    if (session == null) return Results.NotFound();
+    if (session.IsPrivate && session.Password != password) return Results.BadRequest("Invalid password");
+    return Results.Ok(session);
+});
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Join session
+app.MapPost("/api/sessions/join", (JoinModel join) =>
 {
-    app.UseWebAssemblyDebugging();
-}
-else
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
+    var session = sessions.FirstOrDefault(s => s.Id == join.SessionId);
+    if (session == null) return Results.NotFound();
+    if (session.IsPrivate && session.Password != join.Password) return Results.BadRequest("Invalid password");
+    return Results.Ok(session);
+});
 
-
-
+app.UseWebAssemblyDebugging();
 app.UseHttpsRedirection();
-
-
-app.UseAntiforgery();
-
-app.MapGet("/api/hello", () => Results.Ok(new { message = "Hello from the server!" }));
-
+app.UseAntiforgery(); 
 app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(JamCreator.Client._Imports).Assembly);
-
-
+app.MapRazorComponents<App>().AddInteractiveWebAssemblyRenderMode();
 app.Run();

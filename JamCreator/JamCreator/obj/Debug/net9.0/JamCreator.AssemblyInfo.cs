@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("JamCreator")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a03dc22effb76c5eb3894196ba57bd527e0ea449")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2e43156b09adf2c4263df8b96705d0bfcaa2ae16")]
 [assembly: System.Reflection.AssemblyProductAttribute("JamCreator")]
 [assembly: System.Reflection.AssemblyTitleAttribute("JamCreator")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
