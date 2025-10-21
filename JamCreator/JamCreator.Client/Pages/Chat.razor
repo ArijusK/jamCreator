@@ -23,10 +23,15 @@
     {
       @foreach (var m in Messages)
       {
-        var mine = string.Equals(m.User, Name, StringComparison.OrdinalIgnoreCase);
-        <div class="msg @(mine ? "mine" : "theirs")">
+        <div class="msg @(m.User == Name ? "mine" : "theirs")">
           <div class="meta">
-            <span class="user">@m.User</span>
+            <span class="user">
+              @if (!string.IsNullOrEmpty(m.Avatar))
+              {
+                <span class="avatar" style="font-size:20px;margin-right:4px;">@m.Avatar</span>
+              }
+              @m.User
+            </span>
             <span class="time">@m.Timestamp.ToString("HH:mm")</span>
           </div>
           <div class="bubble">@m.Text</div>
@@ -60,6 +65,7 @@
     private string? Name { get; set; }
     private bool NameLocked { get; set; }
     private string? Message { get; set; }
+    private string? Avatar { get; set; }
     private List<ChatMsg> Messages { get; } = new();
     private bool IsSendDisabled => string.IsNullOrWhiteSpace(Message);
 
@@ -70,9 +76,9 @@
             .WithAutomaticReconnect()
             .Build();
 
-        hubConnection.On<string, string>("ReceiveMessage", (user, text) =>
+        hubConnection.On<string, string, string>("ReceiveMessage", (user, text, avatar) =>
         {
-            Messages.Add(new ChatMsg(user, text, DateTime.Now));
+            Messages.Add(new ChatMsg(user, text, DateTime.Now, avatar));
             InvokeAsync(async () =>
             {
                 StateHasChanged();
@@ -92,6 +98,12 @@
             {
                 Name = storedName;
                 NameLocked = true;
+            }
+
+            var storedAvatar = await JS.InvokeAsync<string>("localStorage.getItem", "avatar");
+            if (!string.IsNullOrWhiteSpace(storedAvatar))
+            {
+                Avatar = storedAvatar;
             }
 
             await JS.InvokeVoidAsync("chatHelpers.focus", "messageInput");
@@ -114,14 +126,17 @@
 
         var text = Message!.Trim();
         var user = Name!;
-        Messages.Add(new ChatMsg(user, text, DateTime.Now));
+        var avatar = Avatar ?? "";
+
+        // Lokaliai pridedam žinutę sau
+        Messages.Add(new ChatMsg(user, text, DateTime.Now, avatar));
         Message = string.Empty;
 
         await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
         await JS.InvokeVoidAsync("chatHelpers.focus", "messageInput");
 
         if (hubConnection is not null)
-            await hubConnection.SendAsync("SendMessage", user, text);
+            await hubConnection.SendAsync("SendMessage", user, text, avatar);
     }
 
     private async Task HandleEnter(KeyboardEventArgs e)
@@ -136,5 +151,5 @@
         _ = JS.InvokeVoidAsync("chatHelpers.focus", "nameInput");
     }
 
-    private record ChatMsg(string User, string Text, DateTime Timestamp);
+    private record ChatMsg(string User, string Text, DateTime Timestamp, string? Avatar);
 }

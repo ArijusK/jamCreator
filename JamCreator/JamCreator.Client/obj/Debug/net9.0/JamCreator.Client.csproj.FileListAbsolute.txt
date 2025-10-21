@@ -4268,10 +4268,10 @@ C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\obj\Debug\n
 C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\obj\Debug\net9.0\refint\JamCreator.Client.dll
 C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\obj\Debug\net9.0\JamCreator.Client.pdb
 C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\obj\Debug\net9.0\ref\JamCreator.Client.dll
-C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\bin\Debug\net9.0\wwwroot\_framework\JamCreator.Client.uvl96g9ux1.wasm
-C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\bin\Debug\net9.0\wwwroot\_framework\JamCreator.Client.diybtgq43d.pdb
-C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\bin\Debug\net9.0\wwwroot\_framework\JamCreator.Client.uvl96g9ux1.wasm.gz
-C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\bin\Debug\net9.0\wwwroot\_framework\JamCreator.Client.diybtgq43d.pdb.gz
-C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\obj\Debug\net9.0\compressed\wivppcbcgn-uvl96g9ux1.gz
-C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\obj\Debug\net9.0\compressed\ko8qvsx0np-diybtgq43d.gz
-C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\obj\Debug\net9.0\compressed\n5bthsky26-x2c2azbv6c.gz
+C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\bin\Debug\net9.0\wwwroot\_framework\JamCreator.Client.vnqkylypan.wasm
+C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\bin\Debug\net9.0\wwwroot\_framework\JamCreator.Client.zw4bmv0oon.pdb
+C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\bin\Debug\net9.0\wwwroot\_framework\JamCreator.Client.vnqkylypan.wasm.gz
+C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\bin\Debug\net9.0\wwwroot\_framework\JamCreator.Client.zw4bmv0oon.pdb.gz
+C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\obj\Debug\net9.0\compressed\wivppcbcgn-vnqkylypan.gz
+C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\obj\Debug\net9.0\compressed\ko8qvsx0np-zw4bmv0oon.gz
+C:\Users\justi\Documents\PSI\jamCreator\jamCreator\JamCreator.Client\obj\Debug\net9.0\compressed\n5bthsky26-wk6gwba4d3.gz
