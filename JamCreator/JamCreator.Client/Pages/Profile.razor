@@ -1,3 +1,119 @@
+@rendermode InteractiveWebAssembly
 @page "/profile"
+@using System.ComponentModel.DataAnnotations
+@inject IJSRuntime JS
+
 <h1>Your Profile</h1>
-<p>Customize your username and preferences here.</p>
+
+@if (hasProfile && !isEditing)
+{
+    <div class="profile-display">
+        <p><strong>Nickname:</strong> @profile.Username</p>
+        <p><strong>Favorite Genre:</strong> @profile.FavoriteGenre</p>
+        <div class="btn-group">
+            <button class="btn btn-primary" @onclick="BeginEdit">Change</button>
+            <button class="btn btn-danger" @onclick="DeleteProfile">Delete</button>
+        </div>
+    </div>
+}
+else
+{
+    <EditForm Model="@profile" OnValidSubmit="@SaveProfile" FormName="profileForm">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group">
+            <label for="username">Nickname</label>
+            <InputText id="username" class="form-control" @bind-Value="profile.Username" />
+            <ValidationMessage For="@(() => profile.Username)" />
+        </div>
+
+        <div class="form-group">
+            <label for="genre">Favorite Genre</label>
+            <InputText id="genre" class="form-control" @bind-Value="profile.FavoriteGenre" />
+        </div>
+
+        <div class="btn-group">
+            <button type="submit" class="btn btn-success">Save</button>
+            <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+        </div>
+    </EditForm>
+}
+
+@if (showSavedMessage)
+{
+    <p class="text-success">Profile saved successfully</p>
+}
+
+@code {
+    private UserProfile profile = new();
+    private bool hasProfile = false;
+    private bool isEditing = false;
+    private bool showSavedMessage = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var username = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
+            var genre = await JS.InvokeAsync<string>("localStorage.getItem", "genre");
+
+            if (!string.IsNullOrEmpty(username))
+            {
+                profile.Username = username;
+                hasProfile = true;
+                isEditing = false;
+            }
+            else
+            {
+                hasProfile = false;
+                isEditing = true;
+            }
+
+            if (!string.IsNullOrEmpty(genre))
+                profile.FavoriteGenre = genre;
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveProfile()
+    {
+        await JS.InvokeVoidAsync("localStorage.setItem", "chat.username", profile.Username);
+        await JS.InvokeVoidAsync("localStorage.setItem", "genre", profile.FavoriteGenre);
+        hasProfile = true;
+        isEditing = false;
+        showSavedMessage = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        showSavedMessage = false;
+        StateHasChanged();
+    }
+
+    private void BeginEdit() => isEditing = true;
+
+    private async Task DeleteProfile()
+    {
+        await JS.InvokeVoidAsync("localStorage.removeItem", "chat.username");
+        await JS.InvokeVoidAsync("localStorage.removeItem", "genre");
+        profile = new UserProfile();
+        hasProfile = false;
+        isEditing = true;
+        StateHasChanged();
+    }
+
+    private void CancelEdit()
+    {
+        if (hasProfile)
+            isEditing = false;
+        else
+            profile = new UserProfile();
+    }
+
+    public class UserProfile
+    {
+        [Required(ErrorMessage = "Nickname is required")]
+        public string Username { get; set; } = string.Empty;
+        public string FavoriteGenre { get; set; } = string.Empty;
+    }
+}

@@ -6,10 +6,8 @@
 
 <div class="chat-shell">
   <div class="chat-header">
-    <span class="logo-dot"></span>
     <h2>Chat</h2>
     <div class="spacer"></div>
-
     @if (NameLocked)
     {
       <div class="name-pill" title="Click to change" @onclick="UnlockName">@Name</div>
@@ -59,13 +57,10 @@
 
 @code {
     private HubConnection? hubConnection;
-
     private string? Name { get; set; }
     private bool NameLocked { get; set; }
     private string? Message { get; set; }
-
     private List<ChatMsg> Messages { get; } = new();
-
     private bool IsSendDisabled => string.IsNullOrWhiteSpace(Message);
 
     protected override async Task OnInitializedAsync()
@@ -75,10 +70,8 @@
             .WithAutomaticReconnect()
             .Build();
 
-        
         hubConnection.On<string, string>("ReceiveMessage", (user, text) =>
         {
-            
             Messages.Add(new ChatMsg(user, text, DateTime.Now));
             InvokeAsync(async () =>
             {
@@ -91,41 +84,42 @@
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
-{
-    if (firstRender)
     {
-        await JS.InvokeVoidAsync("chatHelpers.focus", "nameInput");
+        if (firstRender)
+        {
+            var storedName = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
+            if (!string.IsNullOrWhiteSpace(storedName))
+            {
+                Name = storedName;
+                NameLocked = true;
+            }
+
+            await JS.InvokeVoidAsync("chatHelpers.focus", "messageInput");
+            await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
+        }
     }
-
-    await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
-}
-
 
     private async Task Send()
     {
         if (string.IsNullOrWhiteSpace(Message))
             return;
 
-       
         if (!NameLocked)
         {
             Name = string.IsNullOrWhiteSpace(Name) ? "Guest" : Name!.Trim();
             NameLocked = true;
-            await JS.InvokeVoidAsync("chatHelpers.set", "chat.username", Name);
+            await JS.InvokeVoidAsync("localStorage.setItem", "chat.username", Name);
             StateHasChanged();
         }
 
         var text = Message!.Trim();
         var user = Name!;
-
-       
         Messages.Add(new ChatMsg(user, text, DateTime.Now));
         Message = string.Empty;
 
         await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
         await JS.InvokeVoidAsync("chatHelpers.focus", "messageInput");
 
-       
         if (hubConnection is not null)
             await hubConnection.SendAsync("SendMessage", user, text);
     }

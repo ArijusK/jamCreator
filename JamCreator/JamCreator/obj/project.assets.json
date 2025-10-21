@@ -2955,19 +2955,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\deivi\\.nuget\\packages\\": {}
+    "C:\\Users\\justi\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\deivi\\Documents\\projektas\\jamCreator\\jamcreator\\jamcreator\\JamCreator.csproj",
+      "projectUniqueName": "C:\\Users\\justi\\Documents\\PSI\\jamCreator\\jamCreator\\jamCreator\\JamCreator.csproj",
       "projectName": "JamCreator",
-      "projectPath": "C:\\Users\\deivi\\Documents\\projektas\\jamCreator\\jamcreator\\jamcreator\\JamCreator.csproj",
-      "packagesPath": "C:\\Users\\deivi\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\deivi\\Documents\\projektas\\jamCreator\\jamcreator\\jamcreator\\obj\\",
+      "projectPath": "C:\\Users\\justi\\Documents\\PSI\\jamCreator\\jamCreator\\jamCreator\\JamCreator.csproj",
+      "packagesPath": "C:\\Users\\justi\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\justi\\Documents\\PSI\\jamCreator\\jamCreator\\jamCreator\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\deivi\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\justi\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
@@ -2979,8 +2979,8 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "projectReferences": {
-            "C:\\Users\\deivi\\Documents\\projektas\\jamCreator\\jamcreator\\JamCreator.Client\\JamCreator.Client.csproj": {
-              "projectPath": "C:\\Users\\deivi\\Documents\\projektas\\jamCreator\\jamcreator\\JamCreator.Client\\JamCreator.Client.csproj"
+            "C:\\Users\\justi\\Documents\\PSI\\jamCreator\\jamCreator\\JamCreator.Client\\JamCreator.Client.csproj": {
+              "projectPath": "C:\\Users\\justi\\Documents\\PSI\\jamCreator\\jamCreator\\JamCreator.Client\\JamCreator.Client.csproj"
             }
           }
         }
@@ -3033,7 +3033,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
