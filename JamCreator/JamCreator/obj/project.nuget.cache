@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "zpNTYvFa7lo=",
+  "dgSpecHash": "zo74/ljNaEE=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Administrator\\Documents\\3kursas\\PSI12025\\jamCreator\\jamCreator\\JamCreator\\JamCreator.csproj",
+  "projectFilePath": "C:\\Users\\Administrator\\Documents\\3kursas\\PSI12025\\jamCreator\\jamcreator\\jamCreator\\JamCreator.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Administrator\\.nuget\\packages\\microsoft.aspnetcore.authorization\\9.0.9\\microsoft.aspnetcore.authorization.9.0.9.nupkg.sha512",
     "C:\\Users\\Administrator\\.nuget\\packages\\microsoft.aspnetcore.components\\9.0.9\\microsoft.aspnetcore.components.9.0.9.nupkg.sha512",

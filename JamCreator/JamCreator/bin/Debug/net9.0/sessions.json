@@ -1,0 +1,14 @@
+[
+  {
+    "Id": "3f5e62c8295641bfa9a84d03ece22780",
+    "RoomName": "123",
+    "MaxPeople": 4,
+    "Genre": "Jazz",
+    "Description": "Jazz music",
+    "IsPrivate": false,
+    "Password": null,
+    "Mood": "Groovy",
+    "DurationMinutes": 90,
+    "AllowSkipVote": true
+  }
+]

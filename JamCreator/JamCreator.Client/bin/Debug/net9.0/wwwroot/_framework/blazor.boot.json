@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "JamCreator.Client",
   "resources": {
-    "hash": "sha256-lC7uyz5MfM71TWphrgUPrrYZtjq28L5U26T+IOjA1As=",
+    "hash": "sha256-KIaCEyssPmw0XjmM6FSiSyBLI9SAAJI6kVPQLlcIQ6g=",
     "fingerprinting": {
       "Microsoft.AspNetCore.Authorization.z6jo10m0rd.wasm": "Microsoft.AspNetCore.Authorization.wasm",
       "Microsoft.AspNetCore.Components.65wbz7t8mt.wasm": "Microsoft.AspNetCore.Components.wasm",
@@ -201,10 +201,10 @@
       "icudt_CJK.tjcz0u77k5.dat": "icudt_CJK.dat",
       "icudt_EFIGS.tptq2av103.dat": "icudt_EFIGS.dat",
       "icudt_no_CJK.lfu7j35m59.dat": "icudt_no_CJK.dat",
-      "JamCreator.Shared.pa12nwsxkx.wasm": "JamCreator.Shared.wasm",
-      "JamCreator.Shared.m08af7pbbt.pdb": "JamCreator.Shared.pdb",
-      "JamCreator.Client.4m8u8jdmdx.wasm": "JamCreator.Client.wasm",
-      "JamCreator.Client.v4akjve8ez.pdb": "JamCreator.Client.pdb"
+      "JamCreator.Shared.2cr4npl8vm.wasm": "JamCreator.Shared.wasm",
+      "JamCreator.Shared.zl6fql3mal.pdb": "JamCreator.Shared.pdb",
+      "JamCreator.Client.wtbw5s355s.wasm": "JamCreator.Client.wasm",
+      "JamCreator.Client.0dxg968pmj.pdb": "JamCreator.Client.pdb"
     },
     "jsModuleNative": {
       "dotnet.native.9ih887ebfz.js": "sha256-oS7IRiQoVt9ThQ7Y2UM3XoeY0JqPD02cg9IvRdufn2w="
@@ -414,12 +414,12 @@
       "WindowsBase.vy2l5u79y6.wasm": "sha256-ufB9Mo5joMyUs3DzXWWBFFIZNEVrt6h9N5stYB6Oln4=",
       "mscorlib.xd6mv31d55.wasm": "sha256-1YSLR2eZt3ceALFV//vZUF2AloxVil3VlrW1zZYPSEI=",
       "netstandard.kaml52uspo.wasm": "sha256-HLEwBpLfzKw2/zGSVzHzFJxznCkt/WIjahrziiMrOpA=",
-      "JamCreator.Shared.pa12nwsxkx.wasm": "sha256-75V4TcpumIGmma0323KEVb+6NsG/OfaVf7z9mq5/At8=",
-      "JamCreator.Client.4m8u8jdmdx.wasm": "sha256-5PTEof0TodSGt2wtXG8Ue7e0Gb1U2kuF28BxjfWU/YU="
+      "JamCreator.Shared.2cr4npl8vm.wasm": "sha256-Yi5gWInWM70HNp74B/mKp6VSwX7Kf+LMMCne0Ea5vSU=",
+      "JamCreator.Client.wtbw5s355s.wasm": "sha256-HHfFK+XHgwXgn7gNq6qTsvZPf8SCDJ66nx4KbWz69Dg="
     },
     "pdb": {
-      "JamCreator.Shared.m08af7pbbt.pdb": "sha256-6n1Jmiyj7jiSNULVjXBnasWCU45Omimzdza2af8F9wM=",
-      "JamCreator.Client.v4akjve8ez.pdb": "sha256-seDRq2bSKNbVRVHATDTE2zi/l1ZKc014wyC9HgDNdZQ="
+      "JamCreator.Shared.zl6fql3mal.pdb": "sha256-N00ZaOqWT55WxWYcRUQ8/34xrAimTiU6PR5ilyDpe58=",
+      "JamCreator.Client.0dxg968pmj.pdb": "sha256-5E1R6Cc56NkcCr1+INsmAUZBLz9T5gOrkcuq6FZjSb0="
     }
   },
   "cacheBootResources": true,

@@ -1,17 +1,16 @@
 @page "/create-jam"
-@using System.Net.Http.Json
-@using JamCreator.Shared.Models
-@using JamCreator.Client.Services 
-@inject JamSessionService JamSessionService
-@inject HttpClient Http
+@rendermode InteractiveWebAssembly
+@using System.ComponentModel.DataAnnotations
 @inject ILogger<CreateJam> Logger
-@inject NavigationManager Navigation
+@inject HttpClient Http
+@using JamCreator.Shared.Models
+@inject NavigationManager Nav
 
-<h3>Create Jam</h3>
+<h3>Create Jam Page</h3>
 
-<EditForm Model="Model" OnValidSubmit="Submit" FormName="CreateJamForm">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+<EditForm Model="Model" OnSubmit="Submit" FormName="CreateJamRoom">
+    <DataAnnotationsValidator/>
+    <ValidationSummary/>
 
     <div class="form-group">
         <label>Room name:</label>
@@ -23,8 +22,7 @@
         <label>Max people</label>
         <InputSelect @bind-Value="Model!.MaxPeople" class="form-control" TValue="int?">
             <option value="">Select</option>
-            @foreach (var n in PeopleOptions)
-            {
+            @foreach (var n in PeopleOptions) {
                 <option value="@n">@n</option>
             }
         </InputSelect>
@@ -64,10 +62,7 @@
     <div class="form-group">
         <label>Mood</label>
         <InputSelect @bind-Value="Model!.Mood" class="form-control">
-            @foreach (var m in MoodOptions)
-            {
-                <option value="@m">@m</option>
-            }
+            @foreach (var m in MoodOptions) { <option value="@m">@m</option> }
         </InputSelect>
         <ValidationMessage For="() => Model!.Mood" />
     </div>
@@ -75,10 +70,7 @@
     <div class="form-group">
         <label>Duration</label>
         <InputSelect @bind-Value="Model!.DurationMinutes" class="form-control" TValue="int">
-            @foreach (var d in DurationOptions)
-            {
-                <option value="@d">@d min</option>
-            }
+            @foreach (var d in DurationOptions) { <option value="@d">@d min</option> }
         </InputSelect>
         <ValidationMessage For="() => Model!.DurationMinutes" />
     </div>
@@ -88,46 +80,30 @@
         <label>Allow song skip voting</label>
     </div>
 
-    <button type="submit" class="btn btn-success mt-2">Create Jam</button>
+    <div style="margin-top:1rem">
+        <button type="submit">Create</button>
+    </div>
 </EditForm>
 
-@if (CreatedSession != null)
-{
-    <div class="alert alert-success mt-3">
-        <strong>Created Session!</strong><br />
-        ID: @CreatedSession.Id<br />
-        Room: @CreatedSession.RoomName<br />
-        Mood: @CreatedSession.Mood<br />
-        MaxPeople: @CreatedSession.MaxPeople<br />
-        Genre: @CreatedSession.Genre<br />
-        Description: @CreatedSession.Description<br />
-        IsPrivate: @CreatedSession.IsPrivate<br />
-        Password: @CreatedSession.Password<br />
-        DurationMinutes: @CreatedSession.DurationMinutes<br />
-        AllowSkipVote: @CreatedSession.AllowSkipVote
-    </div>
-}
 
 @code {
-    private JamCreatorUser Model { get; set; } = new();
-    private JamSessionModel? CreatedSession;
-
-    private readonly int[] PeopleOptions = { 2, 3, 4 };
+    private readonly int[] PeopleOptions = { 1, 2, 3, 4 };
     private readonly string[] MoodOptions = { "Chill", "Energetic", "Groovy", "Ambient" };
     private readonly int[] DurationOptions = { 30, 60, 90, 120 };
 
+    private JamCreateModel Model = new();
+
     private async Task Submit()
     {
-    try
-    {
-        CreatedSession = await JamSessionService.CreateSessionAsync(Model);
-        Logger.LogInformation("Created session {id}", CreatedSession.Id);
-
-      //  Navigation.NavigateTo("/join-jam");
-    }
-    catch (Exception ex)
-    {
-        Logger.LogError(ex, "Failed to create session");
-    }
+        var response = await Http.PostAsJsonAsync("/api/sessions/create-jam", Model);
+        if (response.IsSuccessStatusCode)
+        {
+            Nav.NavigateTo("/join-jam");
+        }
+        else
+        {
+            var err = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Error: {err}");
+        }
     }
 }
