@@ -15,11 +15,11 @@ namespace JamCreator.Shared.Models
         public string? Description { get; set; }
         public bool IsPrivate { get; set; }
         public string? Password { get; set; }
-        public string Mood { get; set; }
+        public JamMood Mood { get; set; } = JamMood.Chill;
         public int DurationMinutes { get; set; }
         public bool AllowSkipVote { get; set; }
 
-        
+
         [System.Text.Json.Serialization.JsonIgnore]
         public string? TempPassword { get; set; }
     }

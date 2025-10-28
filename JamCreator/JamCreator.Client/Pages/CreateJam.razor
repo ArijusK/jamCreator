@@ -1,32 +1,40 @@
 @page "/create-jam"
 @rendermode InteractiveWebAssembly
 @using System.ComponentModel.DataAnnotations
+@using JamCreator.Shared.Models
 @inject ILogger<CreateJam> Logger
 @inject HttpClient Http
-@using JamCreator.Shared.Models
 @inject NavigationManager Nav
 
 <h3>Create Jam Page</h3>
 
+@if (!string.IsNullOrWhiteSpace(GreetingMessage))
+{
+    <div class="alert alert-success" role="alert">
+        @GreetingMessage
+    </div>
+}
+
 <EditForm Model="Model" OnSubmit="Submit" FormName="CreateJamRoom">
-    <DataAnnotationsValidator/>
-    <ValidationSummary/>
+    <DataAnnotationsValidator />
+    <ValidationSummary />
 
     <div class="form-group">
         <label>Room name:</label>
-        <InputText @bind-Value="Model!.RoomName" class="form-control"/>
-        <ValidationMessage For="() => Model!.RoomName"/>
+        <InputText @bind-Value="Model!.RoomName" class="form-control" />
+        <ValidationMessage For="() => Model!.RoomName" />
     </div>
 
     <div class="form-group">
         <label>Max people</label>
         <InputSelect @bind-Value="Model!.MaxPeople" class="form-control" TValue="int?">
             <option value="">Select</option>
-            @foreach (var n in PeopleOptions) {
+            @foreach (var n in PeopleOptions)
+            {
                 <option value="@n">@n</option>
             }
         </InputSelect>
-        <ValidationMessage For="() => Model!.MaxPeople"/>
+        <ValidationMessage For="() => Model!.MaxPeople" />
     </div>
 
     <div class="form-group">
@@ -61,8 +69,12 @@
 
     <div class="form-group">
         <label>Mood</label>
-        <InputSelect @bind-Value="Model!.Mood" class="form-control">
-            @foreach (var m in MoodOptions) { <option value="@m">@m</option> }
+        <!-- bind as string to avoid enum conversion issues -->
+        <InputSelect @bind-Value="SelectedMood" class="form-control" TValue="string">
+            @foreach (var m in MoodOptions)
+            {
+                <option value="@m.ToString()">@m.ToString()</option>
+            }
         </InputSelect>
         <ValidationMessage For="() => Model!.Mood" />
     </div>
@@ -70,7 +82,10 @@
     <div class="form-group">
         <label>Duration</label>
         <InputSelect @bind-Value="Model!.DurationMinutes" class="form-control" TValue="int">
-            @foreach (var d in DurationOptions) { <option value="@d">@d min</option> }
+            @foreach (var d in DurationOptions)
+            {
+                <option value="@d">@d min</option>
+            }
         </InputSelect>
         <ValidationMessage For="() => Model!.DurationMinutes" />
     </div>
@@ -85,19 +100,62 @@
     </div>
 </EditForm>
 
-
 @code {
+    // dropdown data
     private readonly int[] PeopleOptions = { 1, 2, 3, 4 };
-    private readonly string[] MoodOptions = { "Chill", "Energetic", "Groovy", "Ambient" };
+
+    private readonly JamMood[] MoodOptions =
+    {
+JamMood.Chill,
+JamMood.Energetic,
+JamMood.Groovy,
+JamMood.Ambient
+};
+
     private readonly int[] DurationOptions = { 30, 60, 90, 120 };
 
+    // form model
     private JamCreateModel Model = new();
 
+    // greeting message to show UI feedback after successful creation
+    private string GreetingMessage = string.Empty;
+
+    // proxy bind property for Mood (string <-> enum)
+    private string SelectedMood
+    {
+        get => Model.Mood.ToString();
+        set
+        {
+            if (Enum.TryParse<JamMood>(value, out var moodResult))
+            {
+                Model.Mood = moodResult;
+            }
+        }
+    }
+
+    // OPTIONAL+NAMED ARGUMENT demo:
+    // - 'name' and 'prefix' both have default values => optional args
+    // - we'll call using 'name:' etc. => named args
+    private string Greet(string name = "Guest", string prefix = "Welcome")
+    {
+        return $"{prefix}, {name}! Thanks for creating a jam.";
+    }
+
+    // submit handler
     private async Task Submit()
     {
         var response = await Http.PostAsJsonAsync("/api/sessions/create-jam", Model);
+
         if (response.IsSuccessStatusCode)
         {
+            // call Greet() AFTER jam is created successfully
+            // use named argument 'name:' but let 'prefix' use its default ("Welcome")
+            GreetingMessage = Greet(name: Model.RoomName ?? "Guest");
+
+            // (optional) log it too
+            Console.WriteLine(GreetingMessage);
+
+            // navigate to join page
             Nav.NavigateTo("/join-jam");
         }
         else

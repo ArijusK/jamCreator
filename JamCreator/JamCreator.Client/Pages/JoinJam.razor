@@ -5,6 +5,8 @@
 @using JamCreator.Shared.Models
 @inject NavigationManager Navigation
 @using System.Text.Json
+@using JamCreator.Shared.Extensions
+
 
 
 
@@ -28,6 +30,7 @@ else
                 <th>Mood</th>
                 <th>Max People</th>
                 <th>Private</th>
+                <th>Joinable</th>
                 <th>Password</th>
                 <th></th>
             </tr>
@@ -41,11 +44,11 @@ else
                     <td>@session.Mood</td>
                     <td>@session.MaxPeople</td>
                     <td>@(session.IsPrivate ? "Yes" : "No")</td>
+                    <td>@(session.IsJoinable() ? "Yes" : "No")</td>
                     <td>
                         @if (session.IsPrivate)
                         {
-                            <input type="password" placeholder="Enter password"
-                                   @bind="session.TempPassword" class="form-control" />
+                            <input type="password" placeholder="Enter password" @bind="session.TempPassword" class="form-control" />
                         }
                     </td>
                     <td>

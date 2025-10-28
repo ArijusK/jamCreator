@@ -18,7 +18,7 @@ namespace JamCreator.Controllers
     [Route("api/sessions")]
     public class SessionsController : ControllerBase
     {
-       // private readonly string _sessionsFilePath;
+        // private readonly string _sessionsFilePath;
         //private readonly JsonSerializerOptions _jsonOptions;
         private readonly FileSessionStore _store;
         //private string? audioBase64;
@@ -31,8 +31,8 @@ namespace JamCreator.Controllers
             _env = env;
             _store = store;
         }
-///----------------------------------------------------------------------------------///
-//move to services on server
+        ///----------------------------------------------------------------------------------///
+        //move to services on server
         // Helper: load sessions from file
         /*private List<JamSessionModel> LoadSessions()
         {
@@ -86,7 +86,7 @@ namespace JamCreator.Controllers
             return Created($"/api/session/{newSession.Id}", newSession.Id);
         }
 
-        // 🟡 GET: api/sessions
+        //  GET: api/sessions
         [HttpGet("get-sessions")]
         public IActionResult GetAll()
         {
@@ -94,7 +94,7 @@ namespace JamCreator.Controllers
             return Ok(sessions);
         }
 
-        // 🔵 GET: api/sessions/{id}
+        //  GET: api/sessions/{id}
         [HttpGet("get-session-id/{id}")]
         public IActionResult GetById(string id)
         {
@@ -105,7 +105,7 @@ namespace JamCreator.Controllers
             return Ok(session);
         }
 
-        // 🔒 POST: api/sessions/join
+        //  POST: api/sessions/join
         [HttpPost("join-jam")]
         public IActionResult Join([FromBody] JoinModel request)
         {
