@@ -10,9 +10,7 @@ using JamCreator.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-<<<<<<< HEAD
 builder.Services.AddScoped<FileSessionStore>();
-=======
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
@@ -23,7 +21,6 @@ builder.Services.AddSignalR();
 // BaseAddress = current app origin (so you can call "api/..." with a relative URL)
 builder.Services.AddScoped(sp =>
     new HttpClient { BaseAddress = new Uri(sp.GetRequiredService<NavigationManager>().BaseUri) });
->>>>>>> origin/main
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
@@ -50,12 +47,9 @@ app.UseAuthorization();
 app.UseCors();
 app.UseRouting();
 
-<<<<<<< HEAD
 app.MapRazorPages();
 app.MapControllers();
 app.MapFallbackToFile("index.html");
 
-=======
 app.MapHub<ChatHub>("/chathub");
->>>>>>> origin/main
 app.Run();

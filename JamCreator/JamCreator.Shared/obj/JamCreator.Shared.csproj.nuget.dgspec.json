@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Unikas\\3_semestras\\PSI\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {}
+    "C:\\Users\\deivi\\Documents\\projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {}
   },
   "projects": {
-    "C:\\Unikas\\3_semestras\\PSI\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {
+    "C:\\Users\\deivi\\Documents\\projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Unikas\\3_semestras\\PSI\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
+        "projectUniqueName": "C:\\Users\\deivi\\Documents\\projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
         "projectName": "JamCreator.Shared",
-        "projectPath": "C:\\Unikas\\3_semestras\\PSI\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
-        "packagesPath": "C:\\Users\\GVili\\.nuget\\packages\\",
-        "outputPath": "C:\\Unikas\\3_semestras\\PSI\\jamCreator\\JamCreator\\JamCreator.Shared\\obj\\",
+        "projectPath": "C:\\Users\\deivi\\Documents\\projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
+        "packagesPath": "C:\\Users\\deivi\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\deivi\\Documents\\projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\GVili\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\deivi\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"

@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "Id": "671d7e04c1974cc6ad34ec6c64cdf707",
+    "RoomName": "jjjjjj",
+    "MaxPeople": 2,
+    "Genre": "sadsad",
+    "Description": "sadsa",
+    "IsPrivate": false,
+    "Password": null,
+    "Mood": 0,
+    "DurationMinutes": 60,
+    "AllowSkipVote": true
+  }
+]
