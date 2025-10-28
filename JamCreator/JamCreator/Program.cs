@@ -13,7 +13,7 @@ builder.Services.AddRazorComponents()
 
 // Basic HttpClient for components rendered via the server
 builder.Services.AddHttpClient();
-
+builder.Services.AddSignalR();
 // BaseAddress = current app origin (so you can call "api/..." with a relative URL)
 builder.Services.AddScoped(sp =>
     new HttpClient { BaseAddress = new Uri(sp.GetRequiredService<NavigationManager>().BaseUri) });
@@ -49,5 +49,5 @@ app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(JamCreator.Client._Imports).Assembly);
 
-
+app.MapHub<ChatHub>("/chathub");
 app.Run();
