@@ -1,0 +1,24 @@
+# Ignore build output
+**/bin/
+**/obj/
+
+# Ignore Visual Studio temporary files
+.vs/
+*.user
+*.suo
+
+# Ignore build artifacts
+*.dll
+*.pdb
+*.exe
+*.cache
+*.log
+
+# Ignore publish folders
+**/wwwroot/dist/
+**/wwwroot/build/
+
+# Ignore backup and temporary files
+*.tmp
+*.bak
+*.swp
