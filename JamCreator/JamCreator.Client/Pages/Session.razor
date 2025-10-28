@@ -1,6 +1,105 @@
-@page "/session/{id}"
-<h1>Jam Session</h1>
-<p>Session ID: @id</p>
+@page "/session/{SessionId}"
+@inject HttpClient Http
+@using JamCreator.Shared.Models
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<h3>Jam Session</h3>
+
+@if (session is null)
+{
+    <p>Loading session...</p>
+}
+else
+{
+    <ul>
+        <li><b>Room:</b> @session.RoomName</li>
+        <li><b>Genre:</b> @session.Genre</li>
+        <li><b>Max People:</b> @session.MaxPeople</li>
+        <li><b>Private:</b> @(session.IsPrivate ? "Yes" : "No")</li>
+        <li><b>Mood:</b> @session.Mood</li>
+        <li><b>Duration:</b> @session.DurationMinutes min</li>
+    </ul>
+
+    <h4>Now Playing</h4>
+    <audio controls style="width:100%;max-width:420px">
+        <source src="@AudioUrl" type="audio/mpeg" />
+        Your browser does not support the audio element.
+    </audio>
+
+    <!-- 🟥 Delete button at the bottom -->
+    <div style="margin-top: 2rem; text-align: center;">
+        <button class="btn btn-danger"
+                @onclick="DeleteSession"
+                disabled="@isDeleting">
+            @(isDeleting ? "Deleting..." : "Delete Session")
+        </button>
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <p style="color:red; margin-top:10px;">@errorMessage</p>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <p style="color:red">@errorMessage</p>
+    }
+
+}
+
 @code {
-    [Parameter] public string id { get; set; } = string.Empty;
+    [Parameter] public string? SessionId { get; set; }
+    private JamSessionModel? session;
+    private string? AudioUrl;
+    private bool isDeleting;
+    private string? errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(SessionId))
+        {
+            session = await Http.GetFromJsonAsync<JamSessionModel>($"/api/sessions/get-session-id/{SessionId}");
+
+            // Use the server endpoint to play the file
+            if (session != null)
+            {
+                var fileName = "song.mp3";
+                AudioUrl = $"api/sessions/play-audio/{fileName}";
+            }
+        }
+    }
+
+    private async Task DeleteSession()
+    {
+        if (session is null) return;
+
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Delete “{session.RoomName}”?");
+        if (!confirmed) return;
+
+        isDeleting = true;
+        errorMessage = null;
+
+        try
+        {
+            var resp = await Http.DeleteAsync($"api/sessions/delete-session/{session.Id}");
+            if (resp.IsSuccessStatusCode)
+            {
+                // Go back to list/home after delete
+                Nav.NavigateTo("/join-jam"); // or "/sessions" if you have a listing page
+            }
+            else
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                errorMessage = $"Delete failed: {resp.StatusCode} {body}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Delete error: {ex.Message}";
+        }
+        finally
+        {
+            isDeleting = false;
+        }
+    }
 }

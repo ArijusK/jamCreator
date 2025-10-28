@@ -8,8 +8,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\JamCreator.Client\JamCreator.Client.csproj" />
+    <ProjectReference Include="..\JamCreator.Shared\JamCreator.Shared.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.9" />
+<<<<<<< HEAD
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.9" />
+
+=======
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
      <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.9" />
+>>>>>>> origin/main
   </ItemGroup>
 </Project>

@@ -1,0 +1,12 @@
+C:\Users\Administrator\Documents\3kursas\PSI12025\jamCreator\jamcreator\JamCreator.Shared\bin\Debug\net9.0\JamCreator.Shared.deps.json
+C:\Users\Administrator\Documents\3kursas\PSI12025\jamCreator\jamcreator\JamCreator.Shared\bin\Debug\net9.0\JamCreator.Shared.dll
+C:\Users\Administrator\Documents\3kursas\PSI12025\jamCreator\jamcreator\JamCreator.Shared\bin\Debug\net9.0\JamCreator.Shared.pdb
+C:\Users\Administrator\Documents\3kursas\PSI12025\jamCreator\jamcreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Administrator\Documents\3kursas\PSI12025\jamCreator\jamcreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.AssemblyInfoInputs.cache
+C:\Users\Administrator\Documents\3kursas\PSI12025\jamCreator\jamcreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.AssemblyInfo.cs
+C:\Users\Administrator\Documents\3kursas\PSI12025\jamCreator\jamcreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.csproj.CoreCompileInputs.cache
+C:\Users\Administrator\Documents\3kursas\PSI12025\jamCreator\jamcreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.sourcelink.json
+C:\Users\Administrator\Documents\3kursas\PSI12025\jamCreator\jamcreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.dll
+C:\Users\Administrator\Documents\3kursas\PSI12025\jamCreator\jamcreator\JamCreator.Shared\obj\Debug\net9.0\refint\JamCreator.Shared.dll
+C:\Users\Administrator\Documents\3kursas\PSI12025\jamCreator\jamcreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.pdb
+C:\Users\Administrator\Documents\3kursas\PSI12025\jamCreator\jamcreator\JamCreator.Shared\obj\Debug\net9.0\ref\JamCreator.Shared.dll

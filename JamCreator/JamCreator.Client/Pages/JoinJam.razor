@@ -1,2 +1,122 @@
 @page "/join-jam"
-<h3>Join Jam Page</h3>
+@using System.ComponentModel.DataAnnotations
+@inject ILogger<JoinJam> Logger
+@inject HttpClient Http
+@using JamCreator.Shared.Models
+@inject NavigationManager Navigation
+@using System.Text.Json
+@using JamCreator.Shared.Extensions
+
+
+
+
+<h3>Join a Jam Session</h3>
+
+@if (isLoading)
+{
+    <p><em>Loading sessions...</em></p>
+}
+else if (sessions == null || sessions.Count == 0)
+{
+    <p>No active jam sessions found. <a href="/create-jam">Create one!</a></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Room Name</th>
+                <th>Genre</th>
+                <th>Mood</th>
+                <th>Max People</th>
+                <th>Private</th>
+                <th>Joinable</th>
+                <th>Password</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var session in sessions)
+            {
+                <tr>
+                    <td>@session.RoomName</td>
+                    <td>@session.Genre</td>
+                    <td>@session.Mood</td>
+                    <td>@session.MaxPeople</td>
+                    <td>@(session.IsPrivate ? "Yes" : "No")</td>
+                    <td>@(session.IsJoinable() ? "Yes" : "No")</td>
+                    <td>
+                        @if (session.IsPrivate)
+                        {
+                            <input type="password" placeholder="Enter password" @bind="session.TempPassword" class="form-control" />
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-primary" @onclick="() => Submit(session)">
+                            Join
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
+@code {
+    private List<JamSessionModel> sessions = new();
+    private bool isLoading = true;
+    private string? errorMessage;
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine("Test");
+        try
+        {
+            Console.WriteLine("Test");
+            isLoading = true;
+            sessions = await Http.GetFromJsonAsync<List<JamSessionModel>>("/api/sessions/get-sessions");
+            Logger.LogInformation("Loaded {count} sessions", sessions.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load sessions");
+            errorMessage = "Failed to load sessions. Please try again later.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task Submit(JamSessionModel session)
+    {
+        try
+        {
+            errorMessage = null;
+            var joinRequest = new JoinModel
+            {
+                SessionId = session.Id!,
+                Password = session.IsPrivate ? session.TempPassword : null
+            };
+
+            var response = await Http.PostAsJsonAsync("/api/sessions/join-jam", joinRequest);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Logger.LogInformation("Successfully joined session {id}", session.Id);
+                Navigation.NavigateTo($"/session/{session.Id}");
+            }
+            else
+            {
+                var msg = await response.Content.ReadAsStringAsync();
+                Logger.LogWarning("Join failed: {msg}", msg);
+                errorMessage = "Failed to join session: " + msg;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error joining session");
+            errorMessage = "Unexpected error occurred while joining.";
+        }
+    }
+}

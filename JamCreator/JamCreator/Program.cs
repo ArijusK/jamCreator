@@ -1,12 +1,18 @@
-using JamCreator.Client.Pages;
-using JamCreator.Components;
-
-using System.Net.Http;
+using System;
+using System.Collections.Concurrent;
+using JamCreator.Shared.Models;
 using Microsoft.AspNetCore.Components;
+using JamCreator.Client;
+using System.Text.Json;
+using System.Net.Http;
+using JamCreator.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
+<<<<<<< HEAD
+builder.Services.AddScoped<FileSessionStore>();
+=======
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
@@ -17,37 +23,39 @@ builder.Services.AddSignalR();
 // BaseAddress = current app origin (so you can call "api/..." with a relative URL)
 builder.Services.AddScoped(sp =>
     new HttpClient { BaseAddress = new Uri(sp.GetRequiredService<NavigationManager>().BaseUri) });
+>>>>>>> origin/main
 
+builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
+builder.Services.AddHttpContextAccessor(); // Required for accessing HttpContext
 
+        // Enable CORS to allow API calls
+        builder.Services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(builder =>
+            {
+                builder.WithOrigins("https://localhost:5191") // Blazor app URL
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            });
+        });
 var app = builder.Build();
 
-
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseWebAssemblyDebugging();
-}
-else
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
-
-
-
 app.UseHttpsRedirection();
+app.UseBlazorFrameworkFiles();
+app.UseStaticFiles();
 
+app.UseAuthorization();
 
-app.UseAntiforgery();
+app.UseCors();
+app.UseRouting();
 
-app.MapGet("/api/hello", () => Results.Ok(new { message = "Hello from the server!" }));
+<<<<<<< HEAD
+app.MapRazorPages();
+app.MapControllers();
+app.MapFallbackToFile("index.html");
 
-app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(JamCreator.Client._Imports).Assembly);
-
+=======
 app.MapHub<ChatHub>("/chathub");
+>>>>>>> origin/main
 app.Run();
