@@ -8,19 +8,19 @@
     "net9.0": []
   },
   "packageFolders": {
-    "C:\\Users\\deivi\\.nuget\\packages\\": {}
+    "C:\\Users\\pakaj\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\deivi\\Documents\\projektas\\jamCreator\\jamcreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
+      "projectUniqueName": "C:\\Users\\pakaj\\OneDrive\\Dokumentai\\projekt\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
       "projectName": "JamCreator.Shared",
-      "projectPath": "C:\\Users\\deivi\\Documents\\projektas\\jamCreator\\jamcreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
-      "packagesPath": "C:\\Users\\deivi\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\deivi\\Documents\\projektas\\jamCreator\\jamcreator\\JamCreator.Shared\\obj\\",
+      "projectPath": "C:\\Users\\pakaj\\OneDrive\\Dokumentai\\projekt\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
+      "packagesPath": "C:\\Users\\pakaj\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\pakaj\\OneDrive\\Dokumentai\\projekt\\jamCreator\\JamCreator\\JamCreator.Shared\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\deivi\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\pakaj\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
