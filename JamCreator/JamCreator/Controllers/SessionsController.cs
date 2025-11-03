@@ -1,141 +1,170 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Mvc;
-using JamCreator.Shared.Models;
-using System.Text.Json;
-using System.IO;
-using JamCreator.Services;
+using Microsoft.EntityFrameworkCore;
 
-
+using JamCreator.Shared.Models;          // JamSessionModel, SessionParticipant, AudioTrack
+using JamCreator.Shared.Models.DTOs;     // JamSessionDto, ParticipantDto, AudioTrackDto
+using JamCreator.Shared.Interfaces;      // IRepository<T,TKey>
+using JamCreator.Data;                   // AppDbContext
+                                         
 namespace JamCreator.Controllers
 {
     [ApiController]
     [Route("api/sessions")]
     public class SessionsController : ControllerBase
     {
-        // private readonly string _sessionsFilePath;
-        //private readonly JsonSerializerOptions _jsonOptions;
-        private readonly FileSessionStore _store;
-        //private string? audioBase64;
+        private readonly IRepository<JamSessionModel, string> _sessions;
+        private readonly IRepository<SessionParticipant, int> _participants;
+        private readonly IRepository<AudioTrack, int> _tracks;
+        private readonly AppDbContext _db;
         private readonly IWebHostEnvironment _env;
 
-        public SessionsController(IWebHostEnvironment env, FileSessionStore store)
+        public SessionsController(
+            IRepository<JamSessionModel, string> sessions,
+            IRepository<SessionParticipant, int> participants,
+            IRepository<AudioTrack, int> tracks,
+            AppDbContext db,
+            IWebHostEnvironment env)
         {
-            //_sessionsFilePath = Path.Combine(env.ContentRootPath, "sessions.json");
-            //_jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+            _sessions = sessions;
+            _participants = participants;
+            _tracks = tracks;
+            _db = db;
             _env = env;
-            _store = store;
-        }
-        ///----------------------------------------------------------------------------------///
-        //move to services on server
-        // Helper: load sessions from file
-        /*private List<JamSessionModel> LoadSessions()
-        {
-            if (!System.IO.File.Exists(_sessionsFilePath))
-            {
-                Console.WriteLine($"File contents1");
-                return new List<JamSessionModel>();
-            }
-
-            var json = System.IO.File.ReadAllText(_sessionsFilePath);
-            Console.WriteLine($"File contents2");
-            return JsonSerializer.Deserialize<List<JamSessionModel>>(json) ?? new();
         }
 
-        // Helper: save sessions to file
-        private void SaveSessions(List<JamSessionModel> sessions)
-        {
-            var json = JsonSerializer.Serialize(sessions, _jsonOptions);
-            Console.WriteLine($"[SaveSessions] Writing to {_sessionsFilePath}");
-            System.IO.File.WriteAllText(_sessionsFilePath, json);
-        }*/
-
-        ///----------------------------------------------------------------------------------///
-
-        // 🟢 POST: api/sessions
+        // POST: api/sessions/create-jam
         [HttpPost("create-jam")]
-        public IActionResult Create([FromBody] JamCreateModel model)
+        public async Task<IActionResult> Create([FromBody] JamCreateModel model, CancellationToken ct)
         {
-            if (model == null || string.IsNullOrWhiteSpace(model.RoomName))
+            if (model is null || string.IsNullOrWhiteSpace(model.RoomName))
                 return BadRequest("Invalid session data");
 
-            var sessions = _store.LoadSessions();
-
-            var newSession = new JamSessionModel
+            var session = new JamSessionModel
             {
-                Id = Guid.NewGuid().ToString("N"),
-                RoomName = model.RoomName,
-                Genre = model.Genre,
-                Description = model.Description,
-                IsPrivate = model.IsPrivate,
-                Password = model.Password,
-                Mood = model.Mood,
-                MaxPeople = model.MaxPeople ?? 4,
+                RoomName        = model.RoomName,
+                Genre           = model.Genre,
+                Description     = model.Description,
+                IsPrivate       = model.IsPrivate,
+                Password        = model.Password,
+                Mood            = model.Mood,
+                MaxPeople       = model.MaxPeople ?? 4,
                 DurationMinutes = model.DurationMinutes,
-                AllowSkipVote = model.AllowSkipVote
+                AllowSkipVote   = model.AllowSkipVote
             };
 
-            sessions.Add(newSession);
-            _store.SaveSessions(sessions);
-
-            return Created($"/api/session/{newSession.Id}", newSession.Id);
+            await _sessions.AddAsync(session, ct);
+            return Created($"/api/sessions/get-session-id/{session.Id}", session.Id);
         }
 
-        //  GET: api/sessions
+        // GET: api/sessions/get-sessions
         [HttpGet("get-sessions")]
-        public IActionResult GetAll()
+        public async Task<ActionResult<IEnumerable<JamSessionDto>>> GetAll(CancellationToken ct)
         {
-            var sessions = _store.LoadSessions();
-            return Ok(sessions);
+            // Projekcija į DTO per DbContext (efektyvu ir išvengia ciklų)
+            var list = await _db.JamSessions
+                .AsNoTracking()
+                .OrderByDescending(s => s.CreatedAtUtc)
+                .Select(s => new JamSessionDto
+                {
+                    Id              = s.Id,
+                    RoomName        = s.RoomName,
+                    Genre           = s.Genre,
+                    Description     = s.Description,
+                    IsPrivate       = s.IsPrivate,
+                    Mood            = s.Mood,
+                    MaxPeople       = s.MaxPeople,
+                    DurationMinutes = s.DurationMinutes,
+                    AllowSkipVote   = s.AllowSkipVote,
+                    CreatedAtUtc    = s.CreatedAtUtc
+                })
+                .ToListAsync(ct);
+
+            return Ok(list);
         }
 
-        //  GET: api/sessions/{id}
+        // GET: api/sessions/get-session-id/{id}
         [HttpGet("get-session-id/{id}")]
-        public IActionResult GetById(string id)
+        public async Task<ActionResult<JamSessionDto>> GetById(string id, CancellationToken ct)
         {
-            var sessions = _store.LoadSessions();
-            var session = sessions.FirstOrDefault(s => s.Id == id);
-            if (session == null)
-                return NotFound();
-            return Ok(session);
+            if (string.IsNullOrWhiteSpace(id)) return BadRequest();
+
+            var dto = await _db.JamSessions
+                .Where(s => s.Id == id)
+                .Select(s => new JamSessionDto
+                {
+                    Id              = s.Id,
+                    RoomName        = s.RoomName,
+                    Genre           = s.Genre,
+                    Description     = s.Description,
+                    IsPrivate       = s.IsPrivate,
+                    Mood            = s.Mood,
+                    MaxPeople       = s.MaxPeople,
+                    DurationMinutes = s.DurationMinutes,
+                    AllowSkipVote   = s.AllowSkipVote,
+                    CreatedAtUtc    = s.CreatedAtUtc,
+                    Participants    = s.Participants
+                        .Select(p => new ParticipantDto
+                        {
+                            Id          = p.Id,
+                            DisplayName = p.DisplayName,
+                            JoinedAtUtc = p.JoinedAtUtc
+                        }).ToList(),
+                    Tracks = s.Tracks
+                        .Select(t => new AudioTrackDto
+                        {
+                            Id       = t.Id,
+                            FileName = t.FileName,
+                            Title    = t.Title,
+                            Duration = t.Duration
+                        }).ToList()
+                })
+                .AsNoTracking()
+                .AsSplitQuery() // jei yra kelios kolekcijos – padalina užklausas
+                .FirstOrDefaultAsync(ct);
+
+            return dto is null ? NotFound() : Ok(dto);
         }
 
-        //  POST: api/sessions/join
+        // POST: api/sessions/join-jam
         [HttpPost("join-jam")]
-        public IActionResult Join([FromBody] JoinModel request)
+        public async Task<IActionResult> Join([FromBody] JoinModel request, CancellationToken ct)
         {
-            var sessions = _store.LoadSessions();
-            var session = sessions.FirstOrDefault(s => s.Id == request.SessionId);
+            if (request is null || string.IsNullOrWhiteSpace(request.SessionId))
+                return BadRequest("Invalid join request.");
 
-            if (session == null)
-                return NotFound("Session not found");
-
+            var session = await _sessions.GetByIdAsync(request.SessionId, ct);
+            if (session is null) return NotFound("Session not found.");
             if (session.IsPrivate && session.Password != request.Password)
-                return BadRequest("Incorrect password");
+                return BadRequest("Incorrect password.");
 
-            return Ok(session);
+            await _participants.AddAsync(new SessionParticipant
+            {
+                JamSessionId = session.Id,
+                DisplayName  = request.DisplayName ?? "Guest"
+            }, ct);
+
+            // Grąžiname mažą DTO
+            return Ok(new { session.Id, session.RoomName });
         }
+
+        // GET: api/sessions/play-audio/{fileName}
         [HttpGet("play-audio/{fileName}")]
         public IActionResult PlayAudio(string fileName)
         {
             if (string.IsNullOrWhiteSpace(fileName)) return BadRequest();
 
-            // prevent path traversal
-            fileName = Path.GetFileName(fileName);
+            fileName = Path.GetFileName(fileName); // apsauga
 
-            // wwwroot/audio/<fileName>
-            var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+            var webRoot  = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
             var filePath = Path.Combine(webRoot, "audio", fileName);
 
             if (!System.IO.File.Exists(filePath))
                 return NotFound($"Not found: {filePath}");
 
-            // serve as mp3 with byte ranges
             return new PhysicalFileResult(filePath, "audio/mpeg")
             {
                 EnableRangeProcessing = true
@@ -144,24 +173,12 @@ namespace JamCreator.Controllers
 
         // DELETE: api/sessions/delete-session/{id}
         [HttpDelete("delete-session/{id}")]
-        public IActionResult Delete(string id)
+        public async Task<IActionResult> Delete(string id, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(id)) return BadRequest("Missing id.");
 
-            var sessions = _store.LoadSessions();
-            var toRemove = sessions.FirstOrDefault(s => s.Id == id);
-            if (toRemove is null) return NotFound("Session not found.");
-
-            sessions.Remove(toRemove);
-            _store.SaveSessions(sessions);
-
-            return NoContent(); // 204
+            var ok = await _sessions.DeleteByIdAsync(id, ct);
+            return ok ? NoContent() : NotFound("Session not found.");
         }
-
-
-
-
-
     }
 }
-

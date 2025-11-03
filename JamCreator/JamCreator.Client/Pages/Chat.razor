@@ -1,8 +1,12 @@
 @rendermode InteractiveWebAssembly
 @page "/chat"
+
 @using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.AspNetCore.Components.Web
+@using JamCreator.Shared.Models.DTOs
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject HttpClient Http
 
 <div class="chat-shell">
   <div class="chat-header">
@@ -53,8 +57,7 @@
            placeholder="Type a message…"
            @bind="Message"
            @bind:event="oninput"
-           @onkeydown="HandleEnter"
-           />
+           @onkeydown="HandleEnter" />
 
     <button class="send" @onclick="Send" disabled="@IsSendDisabled">Send</button>
   </div>
@@ -62,53 +65,82 @@
 
 @code {
     private HubConnection? hubConnection;
+    private bool _handlerRegistered;
+
     private string? Name { get; set; }
     private bool NameLocked { get; set; }
     private string? Message { get; set; }
     private string? Avatar { get; set; }
-    private List<ChatMsg> Messages { get; } = new();
+    private readonly List<ChatMsg> Messages = new();
     private bool IsSendDisabled => string.IsNullOrWhiteSpace(Message);
 
     protected override async Task OnInitializedAsync()
     {
-        hubConnection = new HubConnectionBuilder()
+        hubConnection ??= new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/chathub"))
             .WithAutomaticReconnect()
             .Build();
 
-        hubConnection.On<string, string, string>("ReceiveMessage", (user, text, avatar) =>
+        // Ensure we don't double-register (prevents duplicate messages)
+        if (!_handlerRegistered)
         {
-            Messages.Add(new ChatMsg(user, text, DateTime.Now, avatar));
-            InvokeAsync(async () =>
-            {
-                StateHasChanged();
-                await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
-            });
-        });
+            hubConnection.Remove("ReceiveMessage");
+            hubConnection.On<string, string, string, DateTime>(
+                "ReceiveMessage",
+                (user, text, avatar, sentAtUtc) =>
+                {
+                    // These are messages from OTHER users only (hub sends to Others)
+                    Messages.Add(new ChatMsg(user, text, sentAtUtc.ToLocalTime(), avatar));
+                    _ = InvokeAsync(async () =>
+                    {
+                        StateHasChanged();
+                        await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
+                    });
+                });
 
-        await hubConnection.StartAsync();
+            _handlerRegistered = true;
+        }
+
+        if (hubConnection.State == HubConnectionState.Disconnected)
+            await hubConnection.StartAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (!firstRender) return;
+
+        // Restore local name/avatar
+        var storedName = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
+        if (!string.IsNullOrWhiteSpace(storedName))
         {
-            var storedName = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
-            if (!string.IsNullOrWhiteSpace(storedName))
-            {
-                Name = storedName;
-                NameLocked = true;
-            }
-
-            var storedAvatar = await JS.InvokeAsync<string>("localStorage.getItem", "avatar");
-            if (!string.IsNullOrWhiteSpace(storedAvatar))
-            {
-                Avatar = storedAvatar;
-            }
-
-            await JS.InvokeVoidAsync("chatHelpers.focus", "messageInput");
-            await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
+            Name = storedName;
+            NameLocked = true;
         }
+
+        var storedAvatar = await JS.InvokeAsync<string>("localStorage.getItem", "avatar");
+        if (!string.IsNullOrWhiteSpace(storedAvatar))
+        {
+            Avatar = storedAvatar;
+        }
+
+        // Load recent history (server returns ascending after reverse)
+        try
+        {
+            var history = await Http.GetFromJsonAsync<List<ChatMessageDto>>("/api/chat/history?take=50");
+            if (history is not null)
+            {
+                foreach (var h in history)
+                    Messages.Add(new ChatMsg(h.User, h.Text, h.SentAtUtc.ToLocalTime(), h.Avatar));
+            }
+        }
+        catch
+        {
+            // ignore history load errors in UI
+        }
+
+        StateHasChanged();
+        await JS.InvokeVoidAsync("chatHelpers.focus", "messageInput");
+        await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
     }
 
     private async Task Send()
@@ -128,7 +160,7 @@
         var user = Name!;
         var avatar = Avatar ?? "";
 
-        // Lokaliai pridedam žinutę sau
+        // ✅ Local echo (sender sees the message immediately)
         Messages.Add(new ChatMsg(user, text, DateTime.Now, avatar));
         Message = string.Empty;
 
@@ -149,6 +181,12 @@
     {
         NameLocked = false;
         _ = JS.InvokeVoidAsync("chatHelpers.focus", "nameInput");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+            await hubConnection.DisposeAsync();
     }
 
     private record ChatMsg(string User, string Text, DateTime Timestamp, string? Avatar);
