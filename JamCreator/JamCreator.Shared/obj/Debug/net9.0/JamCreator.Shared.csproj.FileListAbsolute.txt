@@ -22,3 +22,15 @@ C:\Users\deivi\Documents\projektas\jamCreator\jamcreator\JamCreator.Shared\obj\D
 C:\Users\deivi\Documents\projektas\jamCreator\jamcreator\JamCreator.Shared\obj\Debug\net9.0\refint\JamCreator.Shared.dll
 C:\Users\deivi\Documents\projektas\jamCreator\jamcreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.pdb
 C:\Users\deivi\Documents\projektas\jamCreator\jamcreator\JamCreator.Shared\obj\Debug\net9.0\ref\JamCreator.Shared.dll
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\bin\Debug\net9.0\JamCreator.Shared.deps.json
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\bin\Debug\net9.0\JamCreator.Shared.dll
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\bin\Debug\net9.0\JamCreator.Shared.pdb
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.AssemblyInfoInputs.cache
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.AssemblyInfo.cs
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.csproj.CoreCompileInputs.cache
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.sourcelink.json
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.dll
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\obj\Debug\net9.0\refint\JamCreator.Shared.dll
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.pdb
+C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\obj\Debug\net9.0\ref\JamCreator.Shared.dll
