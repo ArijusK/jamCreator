@@ -1,49 +1,46 @@
 using Bunit;
 using RichardSzalay.MockHttp;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.AspNetCore.Components;
-using Xunit;
 using JamCreator.Client.Pages;
-using System.Net.Http;
-using System;
 
 public class CreateJamTests : TestContext
 {
     [Fact]
     public void SubmitForm_ValidData_CallsApiAndNavigatesToJoinJam()
     {
-        // Arrange
+       // Arrange: strict expectation for the POST
+        var baseUri = new Uri("http://localhost:5191");
         var mockHttp = new MockHttpMessageHandler();
-        mockHttp.When(HttpMethod.Post, "http://localhost/api/sessions/create-jam")
-                .Respond("application/json", "{}"); // fake success response
 
-        Services.AddSingleton(new HttpClient(mockHttp)
-        {
-            BaseAddress = new Uri("http://localhost")
-        });
+        // Expect exactly one POST to this absolute URL
+        mockHttp.Expect(HttpMethod.Post, $"{baseUri}api/sessions/create-jam")
+                //.With(m => m.Content != null) // optional extra checks
+                .Respond("application/json", "{}");
 
-        // Track navigation
+        // Replace any existing HttpClient DI with our mock-backed one
+        Services.RemoveAll<HttpClient>();
+        Services.AddScoped(_ => new HttpClient(mockHttp) { BaseAddress = baseUri });
+
         var nav = Services.GetRequiredService<NavigationManager>();
         var cut = RenderComponent<CreateJam>();
 
-        // Act: find form and submit it
+        // Fill just the room name (enough for your OnSubmit handler)
+        cut.Find("input").Change("Jam One");
 
-        var input = cut.Find("input");
-        input.Change("Jam One");
+        // Act
+        cut.Find("form").Submit();
 
-        var form = cut.Find("form");
-        form.Submit();
-
-        // Wait for async
+        // Assert (wait for async flow to finish)
         cut.WaitForAssertion(() =>
         {
-            // Assert: verify navigation and API call
-            var count = mockHttp.GetMatchCount(
-                mockHttp.When(HttpMethod.Post, "http://localhost/api/sessions/create-jam"));
-            Assert.Equal(1, count); // POST was made once
+            // Verifies that all expectations were met (i.e., the POST happened)
+            mockHttp.VerifyNoOutstandingExpectation();
 
-            Assert.Equal("/join-jam", new Uri(nav.Uri).AbsolutePath); // navigation happened
-        });
+            // And navigation occurred
+            Assert.Equal("/join-jam", new Uri(nav.Uri).AbsolutePath);
+        }, timeout: TimeSpan.FromSeconds(3));
     }
 
     [Fact]
@@ -51,12 +48,12 @@ public class CreateJamTests : TestContext
     {
         // Arrange
         var mockHttp = new MockHttpMessageHandler();
-        mockHttp.When(HttpMethod.Post, "http://localhost/api/sessions/create-jam")
+        mockHttp.When(HttpMethod.Post, "http://localhost:5191/api/sessions/create-jam")
                 .Respond("application/json", "{}"); // fake success
 
         Services.AddSingleton(new HttpClient(mockHttp)
         {
-            BaseAddress = new Uri("http://localhost")
+            BaseAddress = new Uri("http://localhost:5191")
         });
 
         var cut = RenderComponent<CreateJam>();
