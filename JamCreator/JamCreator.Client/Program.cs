@@ -7,6 +7,7 @@ using System.Net.Http;
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
 builder.RootComponents.Add<App>("#app");
+builder.RootComponents.Add<HeadOutlet>("head::after");
 
 // Base address of the server API (adjust if different)
 builder.Services.AddScoped(sp => new HttpClient
