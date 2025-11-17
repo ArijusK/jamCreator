@@ -4,5 +4,15 @@
   "success": true,
   "projectFilePath": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
   "expectedPackageFiles": [],
-  "logs": []
+  "logs": [
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Problem reading the cache file C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\obj\\project.nuget.cache : '<' is an invalid start of a property name. Expected a '\"'. Path: $ | LineNumber: 2 | BytePositionInLine: 0.",
+      "projectPath": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
+      "warningLevel": 1,
+      "filePath": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
+      "targetGraphs": []
+    }
+  ]
 }
