@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using JamCreator.Shared.Models;
 
-
 namespace JamCreator.Services
 {
     public class FileSessionStore
@@ -17,6 +16,7 @@ namespace JamCreator.Services
         {
             _filePath = Path.Combine(env.ContentRootPath, "sessions.json");
         }
+
         // Helper: load sessions from file
         public List<JamSessionModel> LoadSessions()
         {
@@ -26,16 +26,30 @@ namespace JamCreator.Services
                 return new List<JamSessionModel>();
             }
 
-            var json = System.IO.File.ReadAllText(_filePath);
-            return JsonSerializer.Deserialize<List<JamSessionModel>>(json) ?? new();
+            try
+            {
+                var json = System.IO.File.ReadAllText(_filePath);
+                return JsonSerializer.Deserialize<List<JamSessionModel>>(json) ?? new();
+            }
+            catch (Exception ex) 
+            {
+                throw new SessionStoreException("Failed to read sessions.json", ex);
+            }
         }
 
         // Helper: save sessions to file
         public void SaveSessions(List<JamSessionModel> sessions)
         {
-            var json = JsonSerializer.Serialize(sessions, _jsonOptions);
-            Console.WriteLine($"[SaveSessions] Writing to {_filePath}");
-            System.IO.File.WriteAllText(_filePath, json);
+            try
+            {
+                var json = JsonSerializer.Serialize(sessions, _jsonOptions);
+                Console.WriteLine($"[SaveSessions] Writing to {_filePath}");
+                System.IO.File.WriteAllText(_filePath, json);
+            }
+            catch (Exception ex) 
+            {
+                throw new SessionStoreException("Failed to write sessions.json", ex);
+            }
         }
     }
 }

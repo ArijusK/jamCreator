@@ -6,12 +6,17 @@ using JamCreator.Client;
 using System.Text.Json;
 using System.Net.Http;
 using JamCreator.Services;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Logging;
+
 
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<FileSessionStore>();
 // Add services to the container.
+builder.Services.AddSingleton<FileSessionStore>();
+
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
@@ -37,6 +42,8 @@ builder.Services.AddHttpContextAccessor(); // Required for accessing HttpContext
             });
         });
 var app = builder.Build();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 
 app.UseHttpsRedirection();
 app.UseBlazorFrameworkFiles();
