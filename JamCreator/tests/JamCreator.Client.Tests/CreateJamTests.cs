@@ -11,12 +11,11 @@ public class CreateJamTests : TestContext
     public void SubmitForm_ValidData_CallsApiAndNavigatesToJoinJam()
     {
        // Arrange: strict expectation for the POST
-        var baseUri = new Uri("http://localhost:5191");
+        var baseUri = new Uri("http://localhost");
         var mockHttp = new MockHttpMessageHandler();
 
         // Expect exactly one POST to this absolute URL
         mockHttp.Expect(HttpMethod.Post, $"{baseUri}api/sessions/create-jam")
-                //.With(m => m.Content != null) // optional extra checks
                 .Respond("application/json", "{}");
 
         // Replace any existing HttpClient DI with our mock-backed one
@@ -48,12 +47,12 @@ public class CreateJamTests : TestContext
     {
         // Arrange
         var mockHttp = new MockHttpMessageHandler();
-        mockHttp.When(HttpMethod.Post, "http://localhost:5191/api/sessions/create-jam")
+        mockHttp.When(HttpMethod.Post, "http://localhost/api/sessions/create-jam")
                 .Respond("application/json", "{}"); // fake success
 
         Services.AddSingleton(new HttpClient(mockHttp)
         {
-            BaseAddress = new Uri("http://localhost:5191")
+            BaseAddress = new Uri("http://localhost")
         });
 
         var cut = RenderComponent<CreateJam>();
