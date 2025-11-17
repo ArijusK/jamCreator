@@ -34,3 +34,15 @@ C:\Users\pakaj\OneDrive\Dokumentai\projekt\jamCreator\jamcreator\JamCreator.Shar
 C:\Users\pakaj\OneDrive\Dokumentai\projekt\jamCreator\jamcreator\JamCreator.Shared\obj\Debug\net9.0\refint\JamCreator.Shared.dll
 C:\Users\pakaj\OneDrive\Dokumentai\projekt\jamCreator\jamcreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.pdb
 C:\Users\pakaj\OneDrive\Dokumentai\projekt\jamCreator\jamcreator\JamCreator.Shared\obj\Debug\net9.0\ref\JamCreator.Shared.dll
+C:\Users\deivi\Documents\Projektas\jamCreator-1\jamcreator\JamCreator.Shared\bin\Debug\net9.0\JamCreator.Shared.deps.json
+C:\Users\deivi\Documents\Projektas\jamCreator-1\jamcreator\JamCreator.Shared\bin\Debug\net9.0\JamCreator.Shared.dll
+C:\Users\deivi\Documents\Projektas\jamCreator-1\jamcreator\JamCreator.Shared\bin\Debug\net9.0\JamCreator.Shared.pdb
+C:\Users\deivi\Documents\Projektas\jamCreator-1\jamcreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\deivi\Documents\Projektas\jamCreator-1\jamcreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.AssemblyInfoInputs.cache
+C:\Users\deivi\Documents\Projektas\jamCreator-1\jamcreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.AssemblyInfo.cs
+C:\Users\deivi\Documents\Projektas\jamCreator-1\jamcreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.csproj.CoreCompileInputs.cache
+C:\Users\deivi\Documents\Projektas\jamCreator-1\jamcreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.sourcelink.json
+C:\Users\deivi\Documents\Projektas\jamCreator-1\jamcreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.dll
+C:\Users\deivi\Documents\Projektas\jamCreator-1\jamcreator\JamCreator.Shared\obj\Debug\net9.0\refint\JamCreator.Shared.dll
+C:\Users\deivi\Documents\Projektas\jamCreator-1\jamcreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.pdb
+C:\Users\deivi\Documents\Projektas\jamCreator-1\jamcreator\JamCreator.Shared\obj\Debug\net9.0\ref\JamCreator.Shared.dll

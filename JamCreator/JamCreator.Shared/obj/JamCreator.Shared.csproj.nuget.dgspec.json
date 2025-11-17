@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\pakaj\\OneDrive\\Dokumentai\\projekt\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {}
+    "C:\\Users\\deivi\\Documents\\Projektas\\jamCreator-1\\jamcreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {}
   },
   "projects": {
-    "C:\\Users\\pakaj\\OneDrive\\Dokumentai\\projekt\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {
+    "C:\\Users\\deivi\\Documents\\Projektas\\jamCreator-1\\jamcreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\pakaj\\OneDrive\\Dokumentai\\projekt\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
+        "projectUniqueName": "C:\\Users\\deivi\\Documents\\Projektas\\jamCreator-1\\jamcreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
         "projectName": "JamCreator.Shared",
-        "projectPath": "C:\\Users\\pakaj\\OneDrive\\Dokumentai\\projekt\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
-        "packagesPath": "C:\\Users\\pakaj\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\pakaj\\OneDrive\\Dokumentai\\projekt\\jamCreator\\JamCreator\\JamCreator.Shared\\obj\\",
+        "projectPath": "C:\\Users\\deivi\\Documents\\Projektas\\jamCreator-1\\jamcreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
+        "packagesPath": "C:\\Users\\deivi\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\deivi\\Documents\\Projektas\\jamCreator-1\\jamcreator\\JamCreator.Shared\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\pakaj\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\deivi\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -59,7 +59,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

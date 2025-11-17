@@ -1,113 +1,97 @@
 @rendermode InteractiveWebAssembly
-@page "/chat"
 @using Microsoft.AspNetCore.SignalR.Client
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
 <div class="chat-shell">
-  <div class="chat-header">
-    <h2>Chat</h2>
-    <div class="spacer"></div>
-    @if (NameLocked)
-    {
-      <div class="name-pill" title="Click to change" @onclick="UnlockName">@Name</div>
-    }
-  </div>
+    <div class="chat-header">
+        <h2>Chat</h2>
+        <div class="name-pill">@Name</div>
+    </div>
 
-  <div id="chatScroll" class="chat-messages">
-    @if (Messages.Count == 0)
-    {
-      <div class="empty">No messages yet. Be the first to say hi 👋</div>
-    }
-    else
-    {
-      @foreach (var m in Messages)
-      {
-        <div class="msg @(m.User == Name ? "mine" : "theirs")">
-          <div class="meta">
-            <span class="user">
-              @if (!string.IsNullOrEmpty(m.Avatar))
-              {
-                <span class="avatar" style="font-size:20px;margin-right:4px;">@m.Avatar</span>
-              }
-              @m.User
-            </span>
-            <span class="time">@m.Timestamp.ToString("HH:mm")</span>
-          </div>
-          <div class="bubble">@m.Text</div>
-        </div>
-      }
-    }
-  </div>
+    <div id="chatScroll" class="chat-messages">
+        @if (Messages.Count == 0)
+        {
+            <div class="empty">No messages yet.</div>
+        }
+        else
+        {
+            @foreach (var m in Messages)
+            {
+                <div class="msg @(m.User == Name ? "mine" : "theirs")">
+                    <div class="meta">
+                        <span class="user">
+                            @if (!string.IsNullOrEmpty(m.Avatar))
+                            {
+                                <span class="avatar" style="font-size:20px;margin-right:4px;">@m.Avatar</span>
+                            }
+                            @m.User
+                        </span>
+                        <span class="time">@m.Timestamp.ToString("HH:mm")</span>
+                    </div>
+                    <div class="bubble">@m.Text</div>
+                </div>
+            }
+        }
+    </div>
 
-  <div class="chat-inputbar">
-    <input id="nameInput"
-           class="name"
-           placeholder="Your name"
-           @bind="Name"
-           @bind:event="oninput"
-           disabled="@NameLocked" />
-
-    <input id="messageInput"
-           class="message"
-           placeholder="Type a message…"
-           @bind="Message"
-           @bind:event="oninput"
-           @onkeydown="HandleEnter"
-           />
-
-    <button class="send" @onclick="Send" disabled="@IsSendDisabled">Send</button>
-  </div>
+    <div class="chat-inputbar">
+        <input @ref="messageInputRef"
+               id="messageInput"
+               type="text"
+               placeholder="Message..."
+               @bind="Message"
+               @bind:event="oninput"
+               @onkeydown="HandleEnter" />
+        
+        <button class="btn-send" @onclick="Send">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+        </button>
+    </div>
 </div>
 
 @code {
+    [Parameter]
+    public string SessionId { get; set; } = "";
+
     private HubConnection? hubConnection;
-    private string? Name { get; set; }
-    private bool NameLocked { get; set; }
-    private string? Message { get; set; }
-    private string? Avatar { get; set; }
-    private List<ChatMsg> Messages { get; } = new();
-    private bool IsSendDisabled => string.IsNullOrWhiteSpace(Message);
+    private List<ChatMsg> Messages = new();
+    
+    private string Name = "Guest"; 
+    private string? Message;
+    private string? Avatar = "😎"; 
+    
+    private ElementReference messageInputRef;
+
+    public record ChatMsg(string User, string Text, DateTime Timestamp, string Avatar);
 
     protected override async Task OnInitializedAsync()
     {
+        var storedName = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
+        var storedAvatar = await JS.InvokeAsync<string>("localStorage.getItem", "avatar");
+
+        if (!string.IsNullOrWhiteSpace(storedName)) Name = storedName;
+        if (!string.IsNullOrWhiteSpace(storedAvatar)) Avatar = storedAvatar;
+
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/chathub"))
-            .WithAutomaticReconnect()
             .Build();
 
-        hubConnection.On<string, string, string>("ReceiveMessage", (user, text, avatar) =>
+        hubConnection.On<string, string, string>("ReceiveMessage", (user, message, avatar) =>
         {
-            Messages.Add(new ChatMsg(user, text, DateTime.Now, avatar));
-            InvokeAsync(async () =>
-            {
-                StateHasChanged();
-                await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
-            });
+            Messages.Add(new ChatMsg(user, message, DateTime.Now, avatar));
+            StateHasChanged();
+            JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
         });
 
         await hubConnection.StartAsync();
-    }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
+        if (!string.IsNullOrEmpty(SessionId))
         {
-            var storedName = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
-            if (!string.IsNullOrWhiteSpace(storedName))
-            {
-                Name = storedName;
-                NameLocked = true;
-            }
-
-            var storedAvatar = await JS.InvokeAsync<string>("localStorage.getItem", "avatar");
-            if (!string.IsNullOrWhiteSpace(storedAvatar))
-            {
-                Avatar = storedAvatar;
-            }
-
-            await JS.InvokeVoidAsync("chatHelpers.focus", "messageInput");
-            await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
+            await hubConnection.InvokeAsync("JoinSession", SessionId);
         }
     }
 
@@ -116,40 +100,31 @@
         if (string.IsNullOrWhiteSpace(Message))
             return;
 
-        if (!NameLocked)
-        {
-            Name = string.IsNullOrWhiteSpace(Name) ? "Guest" : Name!.Trim();
-            NameLocked = true;
-            await JS.InvokeVoidAsync("localStorage.setItem", "chat.username", Name);
-            StateHasChanged();
-        }
-
-        var text = Message!.Trim();
-        var user = Name!;
+        var text = Message.Trim();
+        var user = Name;
         var avatar = Avatar ?? "";
-
-        // Lokaliai pridedam žinutę sau
-        Messages.Add(new ChatMsg(user, text, DateTime.Now, avatar));
+        
         Message = string.Empty;
 
-        await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
         await JS.InvokeVoidAsync("chatHelpers.focus", "messageInput");
 
         if (hubConnection is not null)
-            await hubConnection.SendAsync("SendMessage", user, text, avatar);
+        {
+            await hubConnection.SendAsync("SendMessage", user, text, avatar, SessionId);
+        }
     }
 
     private async Task HandleEnter(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter" && !IsSendDisabled)
+        if (e.Key == "Enter")
             await Send();
     }
 
-    private void UnlockName()
+    public async ValueTask DisposeAsync()
     {
-        NameLocked = false;
-        _ = JS.InvokeVoidAsync("chatHelpers.focus", "nameInput");
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
     }
-
-    private record ChatMsg(string User, string Text, DateTime Timestamp, string? Avatar);
 }

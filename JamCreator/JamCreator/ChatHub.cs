@@ -1,27 +1,25 @@
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
 
-public interface IChatPayload
+public class DataEnvelope<TData> 
+    where TData : class, new()
 {
-    string User { get; }
-    string Message { get; }
-    string Avatar { get; }
+    public TData Data { get; set; } = new();
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public string DataType { get; set; }
+    
+    public DataEnvelope(TData data)
+    {
+        Data = data;
+        DataType = typeof(TData).Name;
+    }
 }
 
-public class ChatEnvelope<TPayload, TMetadata>
-    where TPayload : IChatPayload, new()
-    where TMetadata : class
+public class AuditLogEntry
 {
-    public TPayload Payload { get; set; } = new();
-    public TMetadata? Metadata { get; set; }
-}
-
-public class ChatEnvelopeDto
-{
+    public string Action { get; set; } = "";
     public string User { get; set; } = "";
-    public string Message { get; set; } = "";
-    public string Avatar { get; set; } = "";
-    public object? Metadata { get; set; }
+    public string Details { get; set; } = "";
 }
 
 public class ChatHub : Hub
@@ -41,25 +39,37 @@ public class ChatHub : Hub
         await base.OnDisconnectedAsync(exception);
     }
 
-    public async Task SendMessage(string user, string message, string avatar)
+    public async Task JoinSession(string sessionId)
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);
+        
+        var log = new AuditLogEntry 
+        { 
+            Action = "Join", 
+            User = Context.ConnectionId, 
+            Details = $"Joined room {sessionId}" 
+        };
+        LogAction(log);
+    }
+
+    public async Task SendMessage(string user, string message, string avatar, string sessionId)
     {
         _connectedUsers.AddOrUpdate(Context.ConnectionId, user, (k, v) => user);
-        await Clients.Others.SendAsync("ReceiveMessage", user, message, avatar);
+
+        var log = new AuditLogEntry 
+        { 
+            Action = "Message", 
+            User = user, 
+            Details = $"Sent to {sessionId}: {message}" 
+        };
+        LogAction(log);
+
+        await Clients.Group(sessionId).SendAsync("ReceiveMessage", user, message, avatar);
     }
 
-    public async Task SendEnvelope(ChatEnvelopeDto envelope)
+    private void LogAction<T>(T info) where T : class, new()
     {
-        _connectedUsers.AddOrUpdate(Context.ConnectionId, envelope.User, (k, v) => envelope.User);
-        await Clients.Others.SendAsync(
-            "ReceiveMessage",
-            envelope.User,
-            envelope.Message,
-            envelope.Avatar
-        );
-    }
-
-    public Task<List<string>> GetOnlineUsers()
-    {
-        return Task.FromResult(_connectedUsers.Values.Distinct().ToList());
+        var envelope = new DataEnvelope<T>(info);
+        Console.WriteLine($"[AUDIT {envelope.Timestamp}]: {envelope.DataType} -> Action performed.");
     }
 }
