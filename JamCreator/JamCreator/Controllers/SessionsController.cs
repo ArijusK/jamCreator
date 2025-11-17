@@ -9,6 +9,7 @@ using JamCreator.Shared.Models;          // JamSessionModel, SessionParticipant,
 using JamCreator.Shared.Models.DTOs;     // JamSessionDto, ParticipantDto, AudioTrackDto
 using JamCreator.Shared.Interfaces;      // IRepository<T,TKey>
 using JamCreator.Data;                   // AppDbContext
+using JamCreator.Services; 
                                          
 namespace JamCreator.Controllers
 {
@@ -21,19 +22,23 @@ namespace JamCreator.Controllers
         private readonly IRepository<AudioTrack, int> _tracks;
         private readonly AppDbContext _db;
         private readonly IWebHostEnvironment _env;
+        private readonly IAudioMoodService _audioMood;
 
         public SessionsController(
             IRepository<JamSessionModel, string> sessions,
             IRepository<SessionParticipant, int> participants,
             IRepository<AudioTrack, int> tracks,
             AppDbContext db,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            IAudioMoodService audioMood)
         {
             _sessions = sessions;
             _participants = participants;
             _tracks = tracks;
             _db = db;
             _env = env;
+            _audioMood = audioMood;
+            
         }
 
         // POST: api/sessions/create-jam
@@ -57,6 +62,7 @@ namespace JamCreator.Controllers
             };
 
             await _sessions.AddAsync(session, ct);
+            await _audioMood.AssignTracksAsync(session, ct);
             return Created($"/api/sessions/get-session-id/{session.Id}", session.Id);
         }
 
@@ -119,6 +125,7 @@ namespace JamCreator.Controllers
                             Id       = t.Id,
                             FileName = t.FileName,
                             Title    = t.Title,
+                            Mood     = t.Mood,
                             Duration = t.Duration
                         }).ToList()
                 })
@@ -151,25 +158,25 @@ namespace JamCreator.Controllers
             return Ok(new { session.Id, session.RoomName });
         }
 
-        // GET: api/sessions/play-audio/{fileName}
-        [HttpGet("play-audio/{fileName}")]
-        public IActionResult PlayAudio(string fileName)
+    [HttpGet("play-audio/{mood}/{fileName}")]
+    public IActionResult PlayAudio(string mood, string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(mood) || string.IsNullOrWhiteSpace(fileName))
+            return BadRequest();
+
+        fileName = Path.GetFileName(fileName);
+
+        var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+        var filePath = Path.Combine(webRoot, "audio", mood.ToLower(), fileName);
+
+        if (!System.IO.File.Exists(filePath))
+            return NotFound($"File not found: {filePath}");
+
+        return new PhysicalFileResult(filePath, "audio/mpeg")
         {
-            if (string.IsNullOrWhiteSpace(fileName)) return BadRequest();
-
-            fileName = Path.GetFileName(fileName); // apsauga
-
-            var webRoot  = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
-            var filePath = Path.Combine(webRoot, "audio", fileName);
-
-            if (!System.IO.File.Exists(filePath))
-                return NotFound($"Not found: {filePath}");
-
-            return new PhysicalFileResult(filePath, "audio/mpeg")
-            {
-                EnableRangeProcessing = true
-            };
-        }
+            EnableRangeProcessing = true
+        };
+    }
 
         // DELETE: api/sessions/delete-session/{id}
         [HttpDelete("delete-session/{id}")]

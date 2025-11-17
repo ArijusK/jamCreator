@@ -10,6 +10,7 @@ namespace JamCreator.Shared.Models.DTOs
         public int Id { get; set; }
         public string FileName { get; set; } = default!;
         public string? Title { get; set; }
+        public JamMood Mood { get; set; }
         public TimeSpan? Duration { get; set; }
     }
 }

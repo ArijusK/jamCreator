@@ -9,6 +9,7 @@ using JamCreator.Data;
 using Microsoft.EntityFrameworkCore;
 using JamCreator.Shared.Interfaces;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using JamCreator.Services; 
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +22,8 @@ builder.Services.AddSignalR();
 builder.Services.AddScoped(sp =>
     new HttpClient { BaseAddress = new Uri(sp.GetRequiredService<NavigationManager>().BaseUri) });
 ///////////////////////////////////////////////
+builder.Services.AddScoped<IAudioMoodService, AudioMoodService>();
+
 builder.Services.AddScoped(typeof(JamCreator.Shared.Interfaces.IRepository<,>), typeof(JamCreator.Data.Repository<,>));
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();

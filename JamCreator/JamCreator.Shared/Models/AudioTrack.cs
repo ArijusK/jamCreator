@@ -16,12 +16,13 @@ namespace JamCreator.Shared.Models
 
         [JsonIgnore] public JamSessionModel JamSession { get; set; }
 
-        // store the file name relative to wwwroot/audio (or a CDN URL if you move later)
+        // store the file name relative to wwwroot/audio 
         [Required, MaxLength(260)] public string FileName { get; set; } = default!;
 
         [MaxLength(120)] public string? Title { get; set; }
 
-        public TimeSpan? Duration { get; set; } // optional if you want to persist duration
+        public TimeSpan? Duration { get; set; } 
+        public JamMood Mood { get; set; }
         public DateTime AddedAtUtc { get; set; } = DateTime.UtcNow;
     }
 }
