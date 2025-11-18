@@ -47,4 +47,55 @@ public class JamSessionExtensionsTests
 
         Assert.True(result);
     }
+
+    [Fact]
+    public void IsJoinable_PrivateWithWhitespacePassword_ReturnsFalse()
+    {
+        // Arrange
+        var session = new JamSessionModel
+        {
+            IsPrivate = true,
+            Password = "   " // whitespace should be treated as empty
+        };
+
+        // Act
+        var result = session.IsJoinable();
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void IsJoinable_PublicWithPassword_ReturnsTrue()
+    {
+        // Arrange
+        var session = new JamSessionModel
+        {
+            IsPrivate = false,
+            Password = "secret"
+        };
+
+        // Act
+        var result = session.IsJoinable();
+
+        // Assert
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void IsJoinable_DefaultSession_ReturnsTrue()
+    {
+        // Arrange
+        var session = new JamSessionModel(); // uses default values
+
+        // Act
+        var result = session.IsJoinable();
+
+        // Assert
+        Assert.False(session.IsPrivate); // sanity check
+        Assert.True(result);
+    }
+
+
+
 }
