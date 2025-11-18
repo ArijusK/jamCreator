@@ -23,7 +23,6 @@ public class SessionsControllerTests
 
     private static SessionsController CreateController(AppDbContext ctx)
     {
-        // Repositories are not used by GetById, so simple mocks are enough here.
         var sessionsRepoMock = new Mock<IRepository<JamSessionModel, string>>();
         var participantsRepoMock = new Mock<IRepository<SessionParticipant, int>>();
         var tracksRepoMock = new Mock<IRepository<AudioTrack, int>>();
@@ -42,35 +41,32 @@ public class SessionsControllerTests
     [Fact]
     public async Task GetById_EmptyId_ReturnsBadRequest()
     {
-        // Arrange
         using var ctx = CreateContext();
         var controller = CreateController(ctx);
 
-        // Act
         var result = await controller.GetById("", CancellationToken.None);
 
-        // Assert
         Assert.IsType<BadRequestResult>(result.Result);
     }
 
     [Fact]
     public async Task GetById_UnknownId_ReturnsNotFound()
     {
-        // Arrange
+
         using var ctx = CreateContext();
         var controller = CreateController(ctx);
 
-        // Act
+
         var result = await controller.GetById("unknown-id", CancellationToken.None);
 
-        // Assert
+
         Assert.IsType<NotFoundResult>(result.Result);
     }
 
     [Fact]
     public async Task GetById_ExistingSession_ReturnsOkWithDto()
     {
-        // Arrange
+
         using var ctx = CreateContext();
         var controller = CreateController(ctx);
 
@@ -78,16 +74,15 @@ public class SessionsControllerTests
         {
             Id = "session-1",
             RoomName = "My Jam",
-            HostUserId = "host-123"
+
         };
 
         ctx.JamSessions.Add(session);
         await ctx.SaveChangesAsync();
 
-        // Act
         var actionResult = await controller.GetById("session-1", CancellationToken.None);
 
-        // Assert
+
         var ok = Assert.IsType<OkObjectResult>(actionResult.Result);
         var dto = Assert.IsType<JamSessionDto>(ok.Value);
 
