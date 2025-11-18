@@ -89,6 +89,141 @@ public class SessionsControllerTests
         Assert.Equal("session-1", dto.Id);
         Assert.Equal("My Jam", dto.RoomName);
     }
+
+    [Fact]
+    public async Task Create_ValidModel_ReturnsCreatedAndCallsRepository()
+    {
+        // Arrange
+        using var ctx = CreateContext();
+
+        var sessionsRepoMock = new Mock<IRepository<JamSessionModel, string>>();
+        var participantsRepoMock = new Mock<IRepository<SessionParticipant, int>>();
+        var tracksRepoMock = new Mock<IRepository<AudioTrack, int>>();
+
+        var envMock = new Mock<IWebHostEnvironment>();
+        envMock.SetupGet(e => e.ContentRootPath).Returns(Directory.GetCurrentDirectory());
+
+        JamSessionModel? capturedSession = null;
+
+        sessionsRepoMock
+            .Setup(r => r.AddAsync(It.IsAny<JamSessionModel>(), It.IsAny<CancellationToken>()))
+            .Callback<JamSessionModel, CancellationToken>((s, _) => capturedSession = s)
+            .Returns(Task.CompletedTask);
+
+        var controller = new SessionsController(
+            sessionsRepoMock.Object,
+            participantsRepoMock.Object,
+            tracksRepoMock.Object,
+            ctx,
+            envMock.Object);
+
+        var model = new JamCreateModel
+        {
+            RoomName = "Unit Test Room",
+            Genre = "Rock",
+            Description = "Test description",
+            IsPrivate = false,
+            Password = null,
+            Mood = JamMood.Chill,
+            MaxPeople = 5,
+            DurationMinutes = 60,
+            AllowSkipVote = true
+        };
+
+        // Act
+        var result = await controller.Create(model, CancellationToken.None);
+
+        // Assert
+        var created = Assert.IsType<CreatedResult>(result);
+        Assert.NotNull(capturedSession);
+
+        // repository received the right data
+        Assert.Equal("Unit Test Room", capturedSession!.RoomName);
+        Assert.Equal("Rock", capturedSession.Genre);
+        Assert.Equal(JamMood.Chill, capturedSession.Mood);
+        Assert.Equal(5, capturedSession.MaxPeople);
+
+        // location and value use the generated Id
+        Assert.Equal($"/api/sessions/get-session-id/{capturedSession.Id}", created.Location);
+        Assert.Equal(capturedSession.Id, created.Value);
+    }
+    
+    [Fact]
+    public async Task Create_EmptyRoomName_ReturnsBadRequest()
+    {
+        // Arrange
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
+
+        var model = new JamCreateModel
+        {
+            RoomName = "",   // invalid
+            Genre = "Rock"
+        };
+
+        // Act
+        var result = await controller.Create(model, CancellationToken.None);
+
+        // Assert
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Invalid session data", badRequest.Value);
+    }
+
+    [Fact]
+    public async Task GetAll_NoSessions_ReturnsEmptyList()
+    {
+        // Arrange
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
+
+        // Act
+        var actionResult = await controller.GetAll(CancellationToken.None);
+
+        // Assert
+        var ok = Assert.IsType<OkObjectResult>(actionResult.Result);
+        var list = Assert.IsType<List<JamSessionDto>>(ok.Value);
+
+        Assert.Empty(list);
+    }
+
+        [Fact]
+    public async Task GetAll_WithSessions_ReturnsOrderedDtos()
+    {
+        // Arrange
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
+
+        var older = new JamSessionModel
+        {
+            Id = "session-1",
+            RoomName = "Older",
+            CreatedAtUtc = DateTime.UtcNow.AddMinutes(-10)
+        };
+
+        var newer = new JamSessionModel
+        {
+            Id = "session-2",
+            RoomName = "Newer",
+            CreatedAtUtc = DateTime.UtcNow
+        };
+
+        ctx.JamSessions.AddRange(older, newer);
+        await ctx.SaveChangesAsync();
+
+        // Act
+        var actionResult = await controller.GetAll(CancellationToken.None);
+
+        // Assert
+        var ok = Assert.IsType<OkObjectResult>(actionResult.Result);
+        var list = Assert.IsType<List<JamSessionDto>>(ok.Value);
+
+        Assert.Equal(2, list.Count);
+        // should be ordered by CreatedAtUtc descending
+        Assert.Equal("Newer", list[0].RoomName);
+        Assert.Equal("Older", list[1].RoomName);
+    }
+
+
 }
 
 /* com */
