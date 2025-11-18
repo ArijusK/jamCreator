@@ -1,14 +1,20 @@
 @page "/join-jam"
 @using System.ComponentModel.DataAnnotations
+@using System.Text.Json
+@using JamCreator.Shared.Models
+@using JamCreator.Shared.Extensions
 @inject ILogger<JoinJam> Logger
 @inject HttpClient Http
-@using JamCreator.Shared.Models
 @inject NavigationManager Navigation
-@using System.Text.Json
-@using JamCreator.Shared.Extensions
+@inject IJSRuntime JS
 
-
-
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="CloseAlert"></button>
+    </div>
+}
 
 <h3>Join a Jam Session</h3>
 
@@ -48,11 +54,16 @@ else
                     <td>
                         @if (session.IsPrivate)
                         {
-                            <input type="password" placeholder="Enter password" @bind="session.TempPassword" class="form-control" />
+                            <input type="password"
+                                   placeholder="Enter password"
+                                   @bind="session.TempPassword"
+                                   class="form-control" />
                         }
                     </td>
                     <td>
-                        <button class="btn btn-primary" @onclick="() => Submit(session)">
+                        <button class="btn btn-primary"
+                                disabled="@(!session.IsJoinable() || isJoining)"
+                                @onclick="() => Submit(session)">
                             Join
                         </button>
                     </td>
@@ -62,21 +73,44 @@ else
     </table>
 }
 
-
 @code {
     private List<JamSessionModel> sessions = new();
     private bool isLoading = true;
+    private bool isJoining = false;
     private string? errorMessage;
+
+    // 🔹 Stabilus ID vienai naršyklei (kad tas pats žmogus neužimtų naujos vietos)
+    private string? clientToken;
+
+    // 🔹 Vartotojo vardas iš /profile (localStorage: chat.username)
+    private string? userName;
+
     protected override async Task OnInitializedAsync()
     {
         Console.WriteLine("Test");
         try
         {
-            Console.WriteLine("Test");
             isLoading = true;
-            sessions = await Http.GetFromJsonAsync<List<JamSessionModel>>("/api/sessions/get-sessions");
+
+            // 1) Susikuriam arba nusiskaitom clientToken
+            clientToken = await JS.InvokeAsync<string>("localStorage.getItem", "jamClientToken");
+            if (string.IsNullOrWhiteSpace(clientToken))
+            {
+                clientToken = Guid.NewGuid().ToString("N");
+                await JS.InvokeVoidAsync("localStorage.setItem", "jamClientToken", clientToken);
+            }
+
+            // 2) Nick iš profile / chat
+            userName = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
+            if (string.IsNullOrWhiteSpace(userName))
+                userName = "Guest";
+
+            // 3) Užkraunam sesijas
+            sessions = await Http.GetFromJsonAsync<List<JamSessionModel>>("/api/sessions/get-sessions")
+                       ?? new List<JamSessionModel>();
+
             Logger.LogInformation("Loaded {count} sessions", sessions.Count);
-        }
+        }//try/catch
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to load sessions");
@@ -93,10 +127,14 @@ else
         try
         {
             errorMessage = null;
+            isJoining = true;
+
             var joinRequest = new JoinModel
             {
-                SessionId = session.Id!,
-                Password = session.IsPrivate ? session.TempPassword : null
+                SessionId   = session.Id!,
+                Password    = session.IsPrivate ? session.TempPassword : null,
+                DisplayName = userName,       
+                ClientToken = clientToken     
             };
 
             var response = await Http.PostAsJsonAsync("/api/sessions/join-jam", joinRequest);
@@ -108,9 +146,22 @@ else
             }
             else
             {
-                var msg = await response.Content.ReadAsStringAsync();
-                Logger.LogWarning("Join failed: {msg}", msg);
-                errorMessage = "Failed to join session: " + msg;
+                var text = await response.Content.ReadAsStringAsync();
+
+                if (text.Contains("Session is full", StringComparison.OrdinalIgnoreCase))
+                    errorMessage = "This session is full. Choose a different one.";
+                else if (text.Contains("Incorrect password", StringComparison.OrdinalIgnoreCase))
+                    errorMessage = "Incorrect password.";
+                else
+                    errorMessage = "Failed to join the session.";
+
+                // Auto-hide after 3 seconds
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(3000);
+                    errorMessage = null;
+                    await InvokeAsync(StateHasChanged);
+                });
             }
         }
         catch (Exception ex)
@@ -118,5 +169,14 @@ else
             Logger.LogError(ex, "Error joining session");
             errorMessage = "Unexpected error occurred while joining.";
         }
+        finally
+        {
+            isJoining = false;
+        }
+    }
+
+    private void CloseAlert()
+    {
+        errorMessage = null;
     }
 }

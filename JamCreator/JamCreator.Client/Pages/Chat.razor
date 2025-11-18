@@ -65,51 +65,67 @@
 
 @code {
     private HubConnection? hubConnection;
-    private bool _handlerRegistered;
 
     private string? Name { get; set; }
     private bool NameLocked { get; set; }
     private string? Message { get; set; }
     private string? Avatar { get; set; }
+
     private readonly List<ChatMsg> Messages = new();
     private bool IsSendDisabled => string.IsNullOrWhiteSpace(Message);
 
     protected override async Task OnInitializedAsync()
     {
-        hubConnection ??= new HubConnectionBuilder()
+        // 1) Užkraunam istoriją iš DB
+        try
+        {
+            var history = await Http.GetFromJsonAsync<List<ChatMessageDto>>("/api/chat/history?take=50");
+            if (history is not null)
+            {
+                foreach (var h in history)
+                {
+                    Messages.Add(new ChatMsg(
+                        h.User,
+                        h.Text,
+                        h.SentAtUtc.ToLocalTime(),
+                        h.Avatar
+                    ));
+                }
+            }
+        }
+        catch
+        {
+            // jei nepavyksta – chat vis tiek veiks live
+        }
+
+        // 2) Paruošiam SignalR ryšį
+        hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/chathub"))
             .WithAutomaticReconnect()
             .Build();
 
-        // Ensure we don't double-register (prevents duplicate messages)
-        if (!_handlerRegistered)
-        {
-            hubConnection.Remove("ReceiveMessage");
-            hubConnection.On<string, string, string, DateTime>(
-                "ReceiveMessage",
-                (user, text, avatar, sentAtUtc) =>
+        // Hub siunčia žinutę tik kitiems klientams (Clients.Others)
+        hubConnection.On<string, string, string, DateTime>(
+            "ReceiveMessage",
+            (user, text, avatar, sentAtUtc) =>
+            {
+                Messages.Add(new ChatMsg(user, text, sentAtUtc.ToLocalTime(), avatar));
+
+                _ = InvokeAsync(async () =>
                 {
-                    // These are messages from OTHER users only (hub sends to Others)
-                    Messages.Add(new ChatMsg(user, text, sentAtUtc.ToLocalTime(), avatar));
-                    _ = InvokeAsync(async () =>
-                    {
-                        StateHasChanged();
-                        await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
-                    });
+                    StateHasChanged();
+                    await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
                 });
+            });
 
-            _handlerRegistered = true;
-        }
-
-        if (hubConnection.State == HubConnectionState.Disconnected)
-            await hubConnection.StartAsync();
+        await hubConnection.StartAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
 
-        // Restore local name/avatar
+        // 3) Nickas ir avataras tik iš localStorage – NE iš DB
         var storedName = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
         if (!string.IsNullOrWhiteSpace(storedName))
         {
@@ -123,22 +139,6 @@
             Avatar = storedAvatar;
         }
 
-        // Load recent history (server returns ascending after reverse)
-        try
-        {
-            var history = await Http.GetFromJsonAsync<List<ChatMessageDto>>("/api/chat/history?take=50");
-            if (history is not null)
-            {
-                foreach (var h in history)
-                    Messages.Add(new ChatMsg(h.User, h.Text, h.SentAtUtc.ToLocalTime(), h.Avatar));
-            }
-        }
-        catch
-        {
-            // ignore history load errors in UI
-        }
-
-        StateHasChanged();
         await JS.InvokeVoidAsync("chatHelpers.focus", "messageInput");
         await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
     }
@@ -156,19 +156,23 @@
             StateHasChanged();
         }
 
-        var text = Message!.Trim();
-        var user = Name!;
+        var text   = Message!.Trim();
+        var user   = Name ?? "Guest";
         var avatar = Avatar ?? "";
 
-        // ✅ Local echo (sender sees the message immediately)
-        Messages.Add(new ChatMsg(user, text, DateTime.Now, avatar));
+        // ✅ Lokalus echo – žinutę sau pasirodo iškart
+        var now = DateTime.Now;
+        Messages.Add(new ChatMsg(user, text, now, avatar));
         Message = string.Empty;
 
         await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
         await JS.InvokeVoidAsync("chatHelpers.focus", "messageInput");
 
+        // ✅ Siunčiam į hub – ten ji išsisaugo į DB ir iškeliauja kitiems
         if (hubConnection is not null)
+        {
             await hubConnection.SendAsync("SendMessage", user, text, avatar);
+        }
     }
 
     private async Task HandleEnter(KeyboardEventArgs e)

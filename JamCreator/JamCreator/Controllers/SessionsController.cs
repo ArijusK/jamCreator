@@ -23,7 +23,7 @@ namespace JamCreator.Controllers
         private readonly AppDbContext _db;
         private readonly IWebHostEnvironment _env;
         private readonly IAudioMoodService _audioMood;
-
+        //Dependency Injection everywhere where reasonable
         public SessionsController(
             IRepository<JamSessionModel, string> sessions,
             IRepository<SessionParticipant, int> participants,
@@ -144,48 +144,84 @@ namespace JamCreator.Controllers
                 return BadRequest("Invalid join request.");
 
             var session = await _sessions.GetByIdAsync(request.SessionId, ct);
-            if (session is null) return NotFound("Session not found.");
+            if (session is null) 
+                return NotFound("Session not found.");
+
             if (session.IsPrivate && session.Password != request.Password)
                 return BadRequest("Incorrect password.");
 
+            var name = string.IsNullOrWhiteSpace(request.DisplayName)
+                ? "Guest"
+                : request.DisplayName.Trim();
+
+            // VISADA pirma tikrinam kiek žmonių yra
+            var participants = await _participants.ListAsync(
+                p => p.JamSessionId == session.Id,
+                ct
+            );
+
+            if (participants.Count >= session.MaxPeople)
+                return BadRequest("Session is full.");
+
+            // tiesiog pridedam naują dalyvį (net jeigu vardas kartojasi)
             await _participants.AddAsync(new SessionParticipant
             {
                 JamSessionId = session.Id,
-                DisplayName  = request.DisplayName ?? "Guest"
+                DisplayName  = name
             }, ct);
 
-            // Grąžiname mažą DTO
             return Ok(new { session.Id, session.RoomName });
         }
 
-    [HttpGet("play-audio/{mood}/{fileName}")]
-    public IActionResult PlayAudio(string mood, string fileName)
-    {
-        if (string.IsNullOrWhiteSpace(mood) || string.IsNullOrWhiteSpace(fileName))
-            return BadRequest();
 
-        fileName = Path.GetFileName(fileName);
 
-        var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
-        var filePath = Path.Combine(webRoot, "audio", mood.ToLower(), fileName);
-
-        if (!System.IO.File.Exists(filePath))
-            return NotFound($"File not found: {filePath}");
-
-        return new PhysicalFileResult(filePath, "audio/mpeg")
+        [HttpGet("play-audio/{mood}/{fileName}")]
+        public IActionResult PlayAudio(string mood, string fileName)
         {
-            EnableRangeProcessing = true
-        };
-    }
+            if (string.IsNullOrWhiteSpace(mood) || string.IsNullOrWhiteSpace(fileName))
+                return BadRequest();
+
+            fileName = Path.GetFileName(fileName);
+
+            var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+            var filePath = Path.Combine(webRoot, "audio", mood.ToLower(), fileName);
+
+            if (!System.IO.File.Exists(filePath))
+                return NotFound($"File not found: {filePath}");
+
+            return new PhysicalFileResult(filePath, "audio/mpeg")
+            {
+                EnableRangeProcessing = true
+            };
+        }
 
         // DELETE: api/sessions/delete-session/{id}
         [HttpDelete("delete-session/{id}")]
         public async Task<IActionResult> Delete(string id, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(id)) return BadRequest("Missing id.");
-
+            //Usage of async/await
             var ok = await _sessions.DeleteByIdAsync(id, ct);
             return ok ? NoContent() : NotFound("Session not found.");
+        }
+        
+        [HttpPost("leave-jam")]
+        public async Task<IActionResult> Leave([FromBody] LeaveJamModel req, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(req.SessionId))
+                return BadRequest();
+
+            var participants = await _participants.ListAsync(
+                p => p.JamSessionId == req.SessionId &&
+                    p.DisplayName == req.DisplayName, ct);
+
+            if (!participants.Any())
+                return NoContent();
+
+            foreach (var p in participants)
+                await _participants.DeleteAsync(p, ct);
+
+            return NoContent();
         }
     }
 }
