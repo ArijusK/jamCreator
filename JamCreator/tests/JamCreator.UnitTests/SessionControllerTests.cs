@@ -223,7 +223,79 @@ public class SessionsControllerTests
         Assert.Equal("Older", list[1].RoomName);
     }
 
+    [Fact]
+    public async Task Delete_ReturnsBadRequest_WhenIdIsEmpty()
+    {
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
 
+        var result = await controller.Delete("", CancellationToken.None);
+
+        var bad = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Missing id.", bad.Value);
+    }
+
+    [Fact]
+    public async Task Delete_ReturnsNotFound_WhenRepositoryReturnsFalse()
+    {
+        using var ctx = CreateContext();
+
+        // Arrange: We must recreate the controller manually to get access to mocks.
+        var sessionsRepoMock = new Mock<IRepository<JamSessionModel, string>>();
+        sessionsRepoMock
+            .Setup(r => r.DeleteByIdAsync("abc", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var participantsRepoMock = new Mock<IRepository<SessionParticipant, int>>();
+        var tracksRepoMock = new Mock<IRepository<AudioTrack, int>>();
+
+        var envMock = new Mock<IWebHostEnvironment>();
+        envMock.SetupGet(e => e.ContentRootPath).Returns(Directory.GetCurrentDirectory());
+
+        var controller = new SessionsController(
+            sessionsRepoMock.Object,
+            participantsRepoMock.Object,
+            tracksRepoMock.Object,
+            ctx,
+            envMock.Object
+        );
+
+        // Act
+        var result = await controller.Delete("abc", CancellationToken.None);
+
+        // Assert
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.Equal("Session not found.", notFound.Value);
+    }
+
+    [Fact]
+    public async Task Delete_ReturnsNoContent_WhenDeleteSucceeds()
+    {
+        using var ctx = CreateContext();
+
+        var sessionsRepoMock = new Mock<IRepository<JamSessionModel, string>>();
+        sessionsRepoMock
+            .Setup(r => r.DeleteByIdAsync("abc", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var participantsRepoMock = new Mock<IRepository<SessionParticipant, int>>();
+        var tracksRepoMock = new Mock<IRepository<AudioTrack, int>>();
+
+        var envMock = new Mock<IWebHostEnvironment>();
+        envMock.SetupGet(e => e.ContentRootPath).Returns(Directory.GetCurrentDirectory());
+
+        var controller = new SessionsController(
+            sessionsRepoMock.Object,
+            participantsRepoMock.Object,
+            tracksRepoMock.Object,
+            ctx,
+            envMock.Object
+        );
+
+        var result = await controller.Delete("abc", CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(result);
+    }
 }
 
 /* com */
