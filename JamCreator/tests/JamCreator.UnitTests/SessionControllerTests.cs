@@ -252,23 +252,43 @@ public class SessionsControllerTests
     {
         using var ctx = CreateContext();
 
-        // arrange: add real session to the EF context
+        // Arrange: we still add to EF (optional)
         ctx.JamSessions.Add(new JamSessionModel
         {
-            Id = "abc",
-            RoomName = "TestRoom",
-            IsPrivate = false
+            Id = "session-1",
+            RoomName = "Older",
+            CreatedAtUtc = DateTime.UtcNow.AddMinutes(-10)
         });
         await ctx.SaveChangesAsync();
 
-        var controller = CreateController(ctx);
+        // We can't access the mock via CreateController,
+        // so we create the controller MANUALLY for this test only.
 
-        // act
-        var result = await controller.Delete("abc", CancellationToken.None);
+        var sessionsRepoMock = new Mock<IRepository<JamSessionModel, string>>();
+        sessionsRepoMock
+            .Setup(r => r.DeleteByIdAsync("session-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
 
-        // assert
+        var participantsRepoMock = new Mock<IRepository<SessionParticipant, int>>();
+        var tracksRepoMock = new Mock<IRepository<AudioTrack, int>>();
+
+        var envMock = new Mock<IWebHostEnvironment>();
+        envMock.SetupGet(e => e.ContentRootPath).Returns(Directory.GetCurrentDirectory());
+
+        var controller = new SessionsController(
+            sessionsRepoMock.Object,
+            participantsRepoMock.Object,
+            tracksRepoMock.Object,
+            ctx,
+            envMock.Object);
+
+        // Act
+        var result = await controller.Delete("session-1", CancellationToken.None);
+
+        // Assert
         Assert.IsType<NoContentResult>(result);
     }
+
 
 
     [Fact]
@@ -341,6 +361,36 @@ public class SessionsControllerTests
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         var message = Assert.IsType<string>(notFound.Value);
         Assert.StartsWith("Not found:", message);
+    }
+
+    [Fact]
+    public void PlayAudio_FileExists_ReturnsPhysicalFile()
+    {
+        using var ctx = CreateContext();
+
+        // === 1. Arrange: create the folder and file ===
+
+        // Controller will use: <current folder>/wwwroot/audio
+        var root = Directory.GetCurrentDirectory();
+        var audioDir = Path.Combine(root, "wwwroot", "audio");
+        Directory.CreateDirectory(audioDir);
+
+        var fileName = "test-audio.mp3";
+        var fullPath = Path.Combine(audioDir, fileName);
+
+        // Create a dummy file
+        File.WriteAllText(fullPath, "dummy");
+
+        // === 2. Act ===
+        var controller = CreateController(ctx);
+        var result = controller.PlayAudio(fileName);
+
+        // === 3. Assert ===
+        var fileResult = Assert.IsType<PhysicalFileResult>(result);
+
+        Assert.Equal("audio/mpeg", fileResult.ContentType);
+        Assert.True(fileResult.EnableRangeProcessing);
+        Assert.Equal(fullPath, fileResult.FileName);
     }
 
 
