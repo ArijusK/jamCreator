@@ -29,7 +29,7 @@ public class ChatControllerTests
         {
             Id = 1,
             User = "A",
-            TExt = "First",
+            Text = "First",
             Avatar = "a.png",
             SentAtUtc = DateTime.UtcNow.AddMinutes(-10)
         });
@@ -39,7 +39,7 @@ public class ChatControllerTests
         {
             Id = 2,
             User = "B",
-            TExt = "Second",
+            Text = "Second",
             Avatar = "b.png",
             SentAtUtc = DateTime.UtcNow
         });
@@ -68,7 +68,7 @@ public class ChatControllerTests
         {
             Id = 1,
             User = "A",
-            TExt = "Old",
+            Text = "Old",
             Avatar = "a.png",
             SentAtUtc = DateTime.UtcNow.AddMinutes(-5)
         });
@@ -77,7 +77,7 @@ public class ChatControllerTests
         {
             Id = 2,
             User = "B",
-            TExt = "New",
+            Text = "New",
             Avatar = "b.png",
             SentAtUtc = DateTime.UtcNow
         });
@@ -107,7 +107,7 @@ public class ChatControllerTests
             {
                 Id = i + 1,
                 User = "User",
-                TExt = $"Msg {i}",
+                Text = $"Msg {i}",
                 Avatar = "x.png",
                 SentAtUtc = DateTime.UtcNow.AddMinutes(-i)
             });
