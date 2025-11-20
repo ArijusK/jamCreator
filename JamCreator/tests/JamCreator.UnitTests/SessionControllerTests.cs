@@ -224,7 +224,7 @@ public class SessionsControllerTests
     }
 
     [Fact]
-    public async Task Delete_ReturnsBadRequest_WhenIdIsEmpty()
+    public async Task Delete_IdIsEmpty_ReturnBadRequest()
     {
         using var ctx = CreateContext();
         var controller = CreateController(ctx);
@@ -236,66 +236,115 @@ public class SessionsControllerTests
     }
 
     [Fact]
-    public async Task Delete_ReturnsNotFound_WhenRepositoryReturnsFalse()
+    public async Task Delete_SessionDoesNotExist_ReturnsNotFound()
     {
         using var ctx = CreateContext();
+        var controller = CreateController(ctx);
 
-        // Arrange: We must recreate the controller manually to get access to mocks.
-        var sessionsRepoMock = new Mock<IRepository<JamSessionModel, string>>();
-        sessionsRepoMock
-            .Setup(r => r.DeleteByIdAsync("abc", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
-
-        var participantsRepoMock = new Mock<IRepository<SessionParticipant, int>>();
-        var tracksRepoMock = new Mock<IRepository<AudioTrack, int>>();
-
-        var envMock = new Mock<IWebHostEnvironment>();
-        envMock.SetupGet(e => e.ContentRootPath).Returns(Directory.GetCurrentDirectory());
-
-        var controller = new SessionsController(
-            sessionsRepoMock.Object,
-            participantsRepoMock.Object,
-            tracksRepoMock.Object,
-            ctx,
-            envMock.Object
-        );
-
-        // Act
         var result = await controller.Delete("abc", CancellationToken.None);
 
-        // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         Assert.Equal("Session not found.", notFound.Value);
     }
 
     [Fact]
-    public async Task Delete_ReturnsNoContent_WhenDeleteSucceeds()
+    public async Task Delete_ExistingSession_ReturnsNoContent()
     {
         using var ctx = CreateContext();
 
-        var sessionsRepoMock = new Mock<IRepository<JamSessionModel, string>>();
-        sessionsRepoMock
-            .Setup(r => r.DeleteByIdAsync("abc", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        // arrange: add real session to the EF context
+        ctx.JamSessions.Add(new JamSessionModel
+        {
+            Id = "abc",
+            RoomName = "TestRoom",
+            IsPrivate = false
+        });
+        await ctx.SaveChangesAsync();
 
-        var participantsRepoMock = new Mock<IRepository<SessionParticipant, int>>();
-        var tracksRepoMock = new Mock<IRepository<AudioTrack, int>>();
+        var controller = CreateController(ctx);
 
-        var envMock = new Mock<IWebHostEnvironment>();
-        envMock.SetupGet(e => e.ContentRootPath).Returns(Directory.GetCurrentDirectory());
-
-        var controller = new SessionsController(
-            sessionsRepoMock.Object,
-            participantsRepoMock.Object,
-            tracksRepoMock.Object,
-            ctx,
-            envMock.Object
-        );
-
+        // act
         var result = await controller.Delete("abc", CancellationToken.None);
 
+        // assert
         Assert.IsType<NoContentResult>(result);
     }
+
+
+    [Fact]
+    public async Task Join_NullRequest_ReturnsBadRequest()
+    {
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
+
+        var result = await controller.Join(null, CancellationToken.None);
+
+        var bad = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Invalid join request.", bad.Value);
+    }
+
+    [Fact]
+    public async Task Join_MissingSessionId_ReturnsBadRequest()
+    {
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
+
+        var request = new JoinModel
+        {
+            SessionId = "",    // invalid
+            DisplayName = "User1"
+        };
+
+        var result = await controller.Join(request, CancellationToken.None);
+
+        var bad = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Invalid join request.", bad.Value);
+    }
+
+    [Fact]
+    public async Task Join_UnknownSession_ReturnsNotFound()
+    {
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
+
+        var request = new JoinModel
+        {
+            SessionId = "does-not-exist",
+            DisplayName = "User1"
+        };
+
+        var result = await controller.Join(request, CancellationToken.None);
+
+        var nf = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.Equal("Session not found.", nf.Value);
+    }
+
+    [Fact]
+    public void PlayAudio_FileNameIsEmpty_ReturnsBadRequest()
+    {
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
+
+        var result = controller.PlayAudio("");
+
+        Assert.IsType<BadRequestResult>(result);
+    }
+
+    [Fact]
+    public void PlayAudio_FileDoesNotExist_ReturnsNotFound()
+    {
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
+
+        var result = controller.PlayAudio("does-not-exist.mp3");
+
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        var message = Assert.IsType<string>(notFound.Value);
+        Assert.StartsWith("Not found:", message);
+    }
+
+
+
 }
 
 /* com */
