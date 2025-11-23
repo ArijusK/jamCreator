@@ -10,20 +10,20 @@ namespace JamCreator.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<int>(
-                name: "Mood",
-                table: "Tracks",
-                type: "int",
-                nullable: false,
-                defaultValue: 0);
+            migrationBuilder.AddColumn<string>(
+                name: "ClientToken",
+                table: "Participants",
+                type: "character varying(100)",
+                maxLength: 100,
+                nullable: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "Mood",
-                table: "Tracks");
+                name: "ClientToken",
+                table: "Participants");
         }
     }
 }

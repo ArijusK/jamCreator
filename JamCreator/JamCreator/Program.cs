@@ -9,7 +9,8 @@ using JamCreator.Data;
 using Microsoft.EntityFrameworkCore;
 using JamCreator.Shared.Interfaces;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using JamCreator.Services; 
+using Npgsql.EntityFrameworkCore.PostgreSQL;
+using JamCreator.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,19 +23,18 @@ builder.Services.AddSignalR();
 builder.Services.AddScoped(sp =>
     new HttpClient { BaseAddress = new Uri(sp.GetRequiredService<NavigationManager>().BaseUri) });
 ///////////////////////////////////////////////
-builder.Services.AddScoped<IAudioMoodService, AudioMoodService>();
-
 builder.Services.AddScoped(typeof(JamCreator.Shared.Interfaces.IRepository<,>), typeof(JamCreator.Data.Repository<,>));
+builder.Services.AddScoped<IAudioMoodService, AudioMoodService>();
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
 builder.Services.AddDbContext<AppDbContext>(
-    opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("Default"))
+    opt => opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
+//builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddHttpContextAccessor(); // Required for accessing HttpContext
 
@@ -55,19 +55,14 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseWebAssemblyDebugging();
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();   // apply migrations automatically during dev
 }
 else
 {
     app.UseExceptionHandler("/Error");
     app.UseHsts();
-}
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseWebAssemblyDebugging();
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.MigrateAsync();   // apply migrations automatically during dev
 }
 
 app.UseHttpsRedirection();

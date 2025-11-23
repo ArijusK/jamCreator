@@ -3,49 +3,103 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @using JamCreator.Shared.Models.DTOs
+@using JamCreator.Shared.Models
 
-<h3>Jam Session</h3>
+<div class="container mt-4">
 
-@if (session is null)
-{
-    <p>Loading session...</p>
-}
-else
-{
-    <ul>
-        <li><b>Room:</b> @session.RoomName</li>
-        <li><b>Genre:</b> @session.Genre</li>
-        <li><b>Max People:</b> @session.MaxPeople</li>
-        <li><b>Private:</b> @(session.IsPrivate ? "Yes" : "No")</li>
-        <li><b>Mood:</b> @session.Mood</li>
-        <li><b>Duration:</b> @session.DurationMinutes min</li>
-    </ul>
+    <!-- ROOM HEADER -->
+    <div class="d-flex align-items-center mb-3">
+        <h3 class="me-3 mb-0">JAM SESSION: @session.RoomName</h3>
 
-    <h4>Now Playing</h4>
+        <button class="btn btn-outline-info p-0 px-1"
+                style="font-size:14px;height:22px;"
+                @onclick="ShowRoomInfo">
+            <i class="bi bi-info-circle"></i>
+        </button>
+
+    </div>
+
+    <!-- ROOM INFO MODAL -->
+    @if (showInfo)
+    {
+        <div class="alert alert-light border shadow-sm p-3 mb-4">
+            <p><b>Genre:</b> @session.Genre</p>
+            <p><b>Mood:</b> @session.Mood</p>
+            <p><b>Max People:</b> @session.MaxPeople</p>
+            <p><b>Private:</b> @(session.IsPrivate ? "Yes" : "No")</p>
+            <p><b>Description:</b> @session.Description</p>
+
+            <button class="btn btn-sm btn-secondary" @onclick="HideRoomInfo">
+                Close
+            </button>
+        </div>
+    }
+
+    <!-- PLAYLIST -->
+    <h5 class="mt-4 mb-2">Playlist</h5>
 
     @if (tracks.Any())
     {
-        <p><i>Tip: only one track will play at a time. Starting one will stop the others.</i></p>
+        <p class="text-muted"><i>Only one track plays at a time.</i></p>
 
-        <h5>Playlist</h5>
         @foreach (var t in tracks)
         {
-            <div style="margin-bottom:1rem;">
-                <p style="margin-bottom:0.25rem;"><b>@t.Title</b></p>
-                <audio class="jam-audio"
-                       controls
-                       style="width:100%;max-width:420px">
-                    <source src="@BuildTrackUrl(t)" type="audio/mpeg" />
-                </audio>
-            </div>
+
+                <div class="card-body">
+                    <p class="fw-bold mb-2">@t.Title</p>
+                    <audio class="jam-audio" controls style="width:100%;">
+                        <source src="@BuildTrackUrl(t)" type="audio/mpeg" />
+                    </audio>
+                </div>
+
         }
     }
     else
     {
-        <p><i>No tracks available for this mood.</i></p>
+        <p class="text-muted"><i>No tracks available.</i></p>
     }
 
-    <div style="margin-top: 2rem; text-align: center;">
+    <!-- PARTICIPANTS -->
+    <h5 class="mt-4 mb-3">Participants</h5>
+
+    <div class="card shadow-sm p-3 mb-4" style="max-width: 320px;">
+        <div class="d-flex justify-content-between mb-3">
+            <span>Online</span>
+            <span class="badge bg-primary">
+                @(participants?.Count ?? 0) / @session.MaxPeople
+            </span>
+        </div>
+
+        @if (participants is null)
+        {
+            <div class="text-muted"><em>Loading...</em></div>
+        }
+        else if (participants.Count == 0)
+        {
+            <div class="text-muted"><em>No one here yet.</em></div>
+        }
+        else
+        {
+            <ul class="list-group">
+                @foreach (var name in participants)
+                {
+                    <li class="list-group-item d-flex align-items-center">
+                        <span>@name</span>
+                        <span class="ms-auto online-dot"></span>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+
+    <!-- ACTION BUTTONS -->
+    <div class="text-center mt-4">
+        <button class="btn btn-secondary me-2"
+                @onclick="LeaveSession"
+                disabled="@isLeaving">
+            @(isLeaving ? "Leaving..." : "Leave Session")
+        </button>
+
         <button class="btn btn-danger"
                 @onclick="DeleteSession"
                 disabled="@isDeleting">
@@ -55,8 +109,10 @@ else
 
     @if (!string.IsNullOrWhiteSpace(errorMessage))
     {
-        <p style="color:red; margin-top:10px;">@errorMessage</p>
+        <p class="text-danger text-center mt-2">@errorMessage</p>
     }
+</div>
+
 }
 
 @code {
@@ -67,6 +123,12 @@ else
     private bool isDeleting = false;
     private string? errorMessage;
     private bool audioInitDone = false;
+    private List<string>? participants;
+    private bool isLeaving = false;
+    private bool showInfo = false;
+
+    void ShowRoomInfo() => showInfo = true;
+    void HideRoomInfo() => showInfo = false;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -86,6 +148,10 @@ else
             {
                 tracks.Clear();
             }
+
+            participants = await Http.GetFromJsonAsync<List<string>>(
+                $"api/sessions/{SessionId}/participants"
+            ) ?? new List<string>();
         }
         catch
         {
@@ -136,7 +202,51 @@ else
 
         isDeleting = false;
     }
+
+    private async Task LeaveSession()
+    {
+        if (session is null || string.IsNullOrWhiteSpace(SessionId))
+            return;
+
+        isLeaving = true;
+        errorMessage = null;
+
+        try
+        {
+            // pasiimam vartotojo vardą iš localStorage (tas pats, kur naudotas JoinJam)
+            var displayName = await JS.InvokeAsync<string>("sessionStorage.getItem", "jam.displayName");
+            if (string.IsNullOrWhiteSpace(displayName))
+                displayName = "Guest";
+            
+            var clientToken = await JS.InvokeAsync<string>("localStorage.getItem", "jamClientToken");
+
+            var req = new LeaveJamModel
+            {
+                SessionId = SessionId,
+                DisplayName = displayName,
+                ClientToken = clientToken
+            };
+
+            var resp = await Http.PostAsJsonAsync("api/sessions/leave-jam", req);
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                Console.WriteLine("leave-jam failed, status: " + resp.StatusCode);
+            }
+
+            Nav.NavigateTo("/join-jam");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to leave session: " + ex.Message;
+        }
+        finally
+        {
+            isLeaving = false;
+        }
+    }
 }
+
 <script>
     // Leidžiam tik vieną audio vienu metu.
     window.audioExclusiveInit = () => {
