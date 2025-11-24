@@ -4,6 +4,8 @@
 @inject IJSRuntime JS
 @using JamCreator.Shared.Models.DTOs
 @using JamCreator.Shared.Models
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.AspNetCore.Components
 
 @if (session is null)
 {
@@ -18,46 +20,103 @@
 else
 {
     <div class="container mt-4">
+        <!-- Room Header -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h3 class="mb-1">@session.RoomName</h3>
+                <div class="text-muted">
+                    @if (!string.IsNullOrWhiteSpace(session.Genre))
+                    {
+                        <span class="me-2">
+                            <strong>Genre:</strong> @session.Genre
+                        </span>
+                    }
 
-        <!-- ROOM HEADER -->
-        <div class="d-flex align-items-center mb-3">
-            <h3 class="me-3 mb-0">JAM SESSION: @session.RoomName</h3>
+                    @if (session.Mood is not null)
+                    {
+                        <span class="me-2">
+                            <strong>Mood:</strong> @session.Mood
+                        </span>
+                    }
 
-            <button class="btn btn-outline-info p-0 px-1"
-                    style="font-size:14px;height:22px;"
-                    @onclick="ShowRoomInfo">
-                <i class="bi bi-info-circle"></i>
-            </button>
+                    @if (session.DurationMinutes is not null)
+                    {
+                        <span class="me-2">
+                            <strong>Duration:</strong> @session.DurationMinutes minutes
+                        </span>
+                    }
+
+                    <span class="me-2">
+                        <strong>Created:</strong> @session.CreatedAtUtc.ToLocalTime().ToString("g")
+                    </span>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-sm" @onclick="ShowRoomInfo">
+                    Room info
+                </button>
+
+                <button class="btn btn-outline-danger btn-sm" @onclick="LeaveSession" disabled="@isLeaving">
+                    @(isLeaving ? "Leaving..." : "Leave Session")
+                </button>
+
+                <button class="btn btn-danger" @onclick="DeleteSession" disabled="@isDeleting">
+                    @(isDeleting ? "Deleting..." : "Delete Session")
+                </button>
+            </div>
         </div>
 
-        <!-- ROOM INFO MODAL -->
+        <!-- Room Info Modal -->
         @if (showInfo)
         {
-            <div class="alert alert-light border shadow-sm p-3 mb-4">
-                <p><b>Genre:</b> @session.Genre</p>
-                <p><b>Mood:</b> @session.Mood</p>
-                <p><b>Max People:</b> @session.MaxPeople</p>
-                <p><b>Private:</b> @(session.IsPrivate ? "Yes" : "No")</p>
-                <p><b>Description:</b> @session.Description</p>
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <h5 class="alert-heading">Room details</h5>
+                <p>
+                    @if (!string.IsNullOrWhiteSpace(session.Description))
+                    {
+                        @session.Description
+                    }
+                    else
+                    {
+                        <em>No additional description.</em>
+                    }
+                </p>
+                <hr />
+                <p class="mb-0">
+                    <strong>Privacy:</strong> @(session.IsPrivate ? "Private" : "Public")<br />
+                    <strong>Allow skip vote:</strong> @(session.AllowSkipVote ? "Yes" : "No")<br />
+                    <strong>Max participants:</strong> @(session.MaxPeople?.ToString() ?? "Unlimited")
+                </p>
 
-                <button class="btn btn-sm btn-secondary" @onclick="HideRoomInfo">
-                    Close
-                </button>
+                <button type="button" class="btn-close" aria-label="Close" @onclick="HideRoomInfo"></button>
             </div>
         }
 
-        <!-- PLAYLIST -->
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="alert alert-danger mt-3" role="alert">
+                @errorMessage
+            </div>
+        }
+
+        <!-- Playlist -->
         <h5 class="mt-4 mb-2">Playlist</h5>
 
         @if (tracks.Any())
         {
-            <p class="text-muted"><i>Only one track plays at a time.</i></p>
+            <p class="text-muted">
+                <i>Only one track plays at a time (synchronized between participants).</i>
+            </p>
 
             @foreach (var t in tracks)
             {
                 <div class="card-body">
                     <p class="fw-bold mb-2">@t.Title</p>
-                    <audio class="jam-audio" controls style="width:100%;">
+
+                    <audio class="jam-audio" controls style="width:100%;" @ref="el => RegisterAudioRef(t.Id.ToString(), el)"
+                        @onplay="() => OnLocalTrackPlayAsync(t.Id.ToString())"
+                        @onpause="() => OnLocalTrackPauseAsync(t.Id.ToString())">
                         <source src="@BuildTrackUrl(t)" type="audio/mpeg" />
                     </audio>
                 </div>
@@ -68,7 +127,7 @@ else
             <p class="text-muted"><i>No tracks available.</i></p>
         }
 
-        <!-- PARTICIPANTS -->
+        <!-- Participants -->
         <h5 class="mt-4 mb-3">Participants</h5>
 
         <div class="card shadow-sm p-3 mb-4" style="max-width: 320px;">
@@ -89,41 +148,22 @@ else
             }
             else
             {
-                <ul class="list-group">
-                    @foreach (var name in participants)
+                <ul class="list-unstyled mb-0">
+                    @foreach (var p in participants)
                     {
-                        <li class="list-group-item d-flex align-items-center">
-                            <span>@name</span>
-                            <span class="ms-auto online-dot"></span>
+                        <li class="d-flex align-items-center mb-1">
+                            <span class="badge rounded-pill bg-secondary me-2">🎧</span>
+                            <span>@p</span>
                         </li>
                     }
                 </ul>
             }
         </div>
-
-        <!-- ACTION BUTTONS -->
-        <div class="text-center mt-4">
-            <button class="btn btn-secondary me-2"
-                    @onclick="LeaveSession"
-                    disabled="@isLeaving">
-                @(isLeaving ? "Leaving..." : "Leave Session")
-            </button>
-
-            <button class="btn btn-danger"
-                    @onclick="DeleteSession"
-                    disabled="@isDeleting">
-                @(isDeleting ? "Deleting..." : "Delete Session")
-            </button>
-        </div>
-
-        @if (!string.IsNullOrWhiteSpace(errorMessage))
-        {
-            <p class="text-danger text-center mt-2">@errorMessage</p>
-        }
     </div>
 }
 
 @code {
+
     [Parameter] public string? SessionId { get; set; }
 
     private JamSessionDto? session;
@@ -134,6 +174,9 @@ else
     private List<string>? participants;
     private bool isLeaving = false;
     private bool showInfo = false;
+
+    private HubConnection? playbackConnection;
+    private readonly Dictionary<string, ElementReference> audioRefs = new();
 
     void ShowRoomInfo() => showInfo = true;
     void HideRoomInfo() => showInfo = false;
@@ -146,7 +189,7 @@ else
         try
         {
             session = await Http.GetFromJsonAsync<JamSessionDto>(
-                $"api/sessions/get-session-id/{SessionId}");
+            $"api/sessions/get-session-id/{SessionId}");
 
             if (session?.Tracks is not null && session.Tracks.Any())
             {
@@ -158,7 +201,7 @@ else
             }
 
             participants = await Http.GetFromJsonAsync<List<string>>(
-                $"api/sessions/{SessionId}/participants"
+            $"api/sessions/{SessionId}/participants"
             ) ?? new List<string>();
         }
         catch
@@ -169,6 +212,12 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // prisijungiame prie sinchroninio grojimo hub'o
+        if (firstRender)
+        {
+            await EnsurePlaybackConnectionAsync();
+        }
+
         // Inicijuojam JS tik kai jau turim trekų ir dar neinicijavom
         if (!audioInitDone && tracks.Any())
         {
@@ -177,8 +226,84 @@ else
         }
     }
 
+    private void RegisterAudioRef(string trackKey, ElementReference element)
+    {
+        audioRefs[trackKey] = element;
+    }
+
+    private async Task EnsurePlaybackConnectionAsync()
+    {
+        if (playbackConnection is not null || string.IsNullOrWhiteSpace(SessionId))
+            return;
+
+        playbackConnection = new HubConnectionBuilder()
+        .WithUrl(Nav.ToAbsoluteUri("/playbackhub"))
+        .WithAutomaticReconnect()
+        .Build();
+
+        playbackConnection.On<JamCreator.Shared.Models.DTOs.PlaybackStateDto>(
+        "PlaybackChanged",
+        async dto =>
+        {
+            await HandlePlaybackChangedAsync(dto);
+        }
+        );
+
+
+        await playbackConnection.StartAsync();
+        await playbackConnection.InvokeAsync("JoinSession", SessionId);
+    }
+
+    private async Task OnLocalTrackPlayAsync(string trackKey)
+    {
+        if (playbackConnection is null || string.IsNullOrWhiteSpace(SessionId))
+            return;
+
+        if (!audioRefs.TryGetValue(trackKey, out var audioRef))
+            return;
+
+        var positionSeconds = await JS.InvokeAsync<double>("getTrackCurrentTime", audioRef);
+
+        await playbackConnection.InvokeAsync("Play", SessionId, trackKey, positionSeconds);
+    }
+
+    private async Task OnLocalTrackPauseAsync(string trackKey)
+    {
+        if (playbackConnection is null || string.IsNullOrWhiteSpace(SessionId))
+            return;
+
+        if (!audioRefs.TryGetValue(trackKey, out var audioRef))
+            return;
+
+        var positionSeconds = await JS.InvokeAsync<double>("getTrackCurrentTime", audioRef);
+
+        await playbackConnection.InvokeAsync("Pause", SessionId, positionSeconds);
+    }
+
+    private async Task HandlePlaybackChangedAsync(JamCreator.Shared.Models.DTOs.PlaybackStateDto dto)
+    {
+        if (dto is null)
+            return;
+
+        var currentSessionId = SessionId;
+        if (string.IsNullOrWhiteSpace(currentSessionId))
+            return;
+
+        // Įsitikiname, kad pekeitimas priklauso šiam kambariui
+        if (!dto.SessionId.ToString().Equals(currentSessionId, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var trackKey = dto.TrackId.ToString();
+
+        if (!audioRefs.TryGetValue(trackKey, out var audioRef))
+            return;
+
+        // Perduodame būseną į JS, kuris pajudina <audio>
+        await JS.InvokeVoidAsync("syncTrackPlayback", audioRef, dto.Status.ToString(), dto.PositionSeconds);
+    }
+
     private string BuildTrackUrl(AudioTrackDto track)
-        => $"api/sessions/play-audio/{track.Mood.ToString().ToLower()}/{track.FileName}";
+    => $"api/sessions/play-audio/{track.Mood.ToString().ToLower()}/{track.FileName}";
 
     private async Task DeleteSession()
     {
@@ -272,5 +397,29 @@ else
         });
 
         console.log("audioExclusiveInit: wired", audios.length, "players");
+    };
+
+    // Grąžina dabartinę nurodyto audio elemento grojimo poziciją (sekundėmis)
+    window.getTrackCurrentTime = (audioElement) => {
+        if (!audioElement) return 0;
+        return audioElement.currentTime || 0;
+    };
+
+    // Pritaiko iš serverio gautą grojimo būseną konkrečiam audio elementui
+    window.syncTrackPlayback = (audioElement, status, positionSeconds) => {
+        if (!audioElement) return;
+
+        if (typeof positionSeconds === 'number' && !isNaN(positionSeconds)) {
+            audioElement.currentTime = positionSeconds;
+        }
+
+        if (status === 'Playing') {
+            audioElement.play();
+        } else if (status === 'Paused') {
+            audioElement.pause();
+        } else if (status === 'Stopped') {
+            audioElement.pause();
+            audioElement.currentTime = 0;
+        }
     };
 </script>

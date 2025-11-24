@@ -11,6 +11,9 @@ using JamCreator.Shared.Interfaces;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Npgsql.EntityFrameworkCore.PostgreSQL;
 using JamCreator.Services;
+using JamCreator.Services.Playback;
+using Microsoft.AspNetCore.SignalR;
+
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +30,11 @@ builder.Services.AddScoped(typeof(JamCreator.Shared.Interfaces.IRepository<,>), 
 builder.Services.AddScoped<IAudioMoodService, AudioMoodService>();
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
+
+builder.Services.AddSingleton<IPlaybackStateStore, InMemoryPlaybackStateStore>();
+builder.Services.AddSingleton<IPlaybackBroadcaster, SignalRPlaybackBroadcaster>();
+builder.Services.AddSingleton<IPlaybackCoordinator, PlaybackCoordinator>();
+
 
 builder.Services.AddDbContext<AppDbContext>(
     opt => opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
@@ -47,7 +55,7 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
-    
+
 });
 
 var app = builder.Build();
@@ -79,4 +87,5 @@ app.MapControllers();
 app.MapFallbackToFile("index.html");
 
 app.MapHub<ChatHub>("/chathub");
+app.MapHub<PlaybackHub>("/playbackhub");
 app.Run();
