@@ -1,14 +1,15 @@
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
-using System.Collections.Concurrent;
+using JamCreator.Data;
+using JamCreator.Shared.Models;
 
-public class DataEnvelope<TData> 
+public class DataEnvelope<TData>
     where TData : class, new()
 {
     public TData Data { get; set; } = new();
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public string DataType { get; set; }
-    
+
     public DataEnvelope(TData data)
     {
         Data = data;
@@ -25,8 +26,13 @@ public class AuditLogEntry
 
 public class ChatHub : Hub
 {
-    private static readonly ConcurrentDictionary<string, string> _connectedUsers =
-        new ConcurrentDictionary<string, string>();
+    private readonly AppDbContext _db;
+    private static readonly ConcurrentDictionary<string, string> _connectedUsers = new();
+
+    public ChatHub(AppDbContext db)
+    {
+        _db = db;
+    }
 
     public override async Task OnConnectedAsync()
     {
@@ -43,34 +49,61 @@ public class ChatHub : Hub
     public async Task JoinSession(string sessionId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);
-        
-        var log = new AuditLogEntry 
-        { 
-            Action = "Join", 
-            User = Context.ConnectionId, 
-            Details = $"Joined room {sessionId}" 
+
+        var log = new AuditLogEntry
+        {
+            Action = "Join",
+            User = Context.ConnectionId,
+            Details = $"Joined room {sessionId}"
         };
         LogAction(log);
     }
 
     public async Task SendMessage(string user, string message, string avatar, string sessionId)
     {
-        _connectedUsers.AddOrUpdate(Context.ConnectionId, user, (k, v) => user);
+        var cleanUser   = string.IsNullOrWhiteSpace(user) ? "Guest" : user.Trim();
+        var cleanText   = message?.Trim() ?? "";
+        var cleanAvatar = string.IsNullOrWhiteSpace(avatar) ? null : avatar.Trim();
 
-        var log = new AuditLogEntry 
-        { 
-            Action = "Message", 
-            User = user, 
-            Details = $"Sent to {sessionId}: {message}" 
+        if (string.IsNullOrWhiteSpace(cleanText))
+            return;
+
+        // 🔹 įrašom į DB su SessionId
+        var entity = new ChatMessage
+        {
+            User       = cleanUser,
+            Text       = cleanText,
+            Avatar     = cleanAvatar,
+            SessionId  = sessionId,
+            SentAtUtc  = DateTime.UtcNow
+        };
+
+        _db.ChatMessages.Add(entity);
+        await _db.SaveChangesAsync();
+
+        _connectedUsers.AddOrUpdate(Context.ConnectionId, cleanUser, (_, _) => cleanUser);
+
+        var log = new AuditLogEntry
+        {
+            Action = "Message",
+            User   = cleanUser,
+            Details = $"Sent to {sessionId}: {cleanText}"
         };
         LogAction(log);
 
-        await Clients.Group(sessionId).SendAsync("ReceiveMessage", user, message, avatar);
+        // 🔹 siunčiam visiems tame room’e, kartu ir timestamp’ą
+        await Clients.Group(sessionId).SendAsync(
+            "ReceiveMessage",
+            entity.User,
+            entity.Text,
+            entity.Avatar,
+            entity.SentAtUtc
+        );
     }
 
     private void LogAction<T>(T info) where T : class, new()
     {
         var envelope = new DataEnvelope<T>(info);
-        Console.WriteLine($"[AUDIT {envelope.Timestamp}]: {envelope.DataType} -> Action performed.");
+        Console.WriteLine($"[AUDIT {envelope.Timestamp:u}]: {envelope.DataType} -> action logged.");
     }
 }
