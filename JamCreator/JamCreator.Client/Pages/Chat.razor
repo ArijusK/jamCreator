@@ -2,6 +2,9 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@using JamCreator.Shared.Models.DTOs
+@inject HttpClient Http
+
 
 <div class="chat-shell">
     <div class="chat-header">
@@ -27,7 +30,7 @@
                             }
                             @m.User
                         </span>
-                        <span class="time">@m.Timestamp.ToString("HH:mm")</span>
+                        <span class="time">@m.TimestampLocal.ToString("HH:mm")</span>
                     </div>
                     <div class="bubble">@m.Text</div>
                 </div>
@@ -97,7 +100,7 @@
 
     private async Task Send()
     {
-        if (string.IsNullOrWhiteSpace(Message))
+        if (string.IsNullOrWhiteSpace(Message) || hubConnection is null)
             return;
 
         var text = Message.Trim();

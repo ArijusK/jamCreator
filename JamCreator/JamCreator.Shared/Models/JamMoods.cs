@@ -3,8 +3,10 @@ namespace JamCreator.Shared.Models
     public enum JamMood
     {
         Chill,
-        Energetic,
-        Groovy,
-        Ambient
+        Rock,
+        Jazz,
+        Blues,
+        Funk,
+        Classical
     }
 }

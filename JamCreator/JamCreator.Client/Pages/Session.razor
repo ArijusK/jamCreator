@@ -1,6 +1,5 @@
 @page "/session/{SessionId}"
 @inject HttpClient Http
-@using JamCreator.Shared.Models
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 
@@ -78,27 +77,63 @@
     private string? AudioUrl;
     private bool isDeleting = false;
     private string? errorMessage;
+    private bool audioInitDone = false;
+    private List<string>? participants;
+    private bool isLeaving = false;
+    private bool showInfo = false;
+
+    void ShowRoomInfo() => showInfo = true;
+    void HideRoomInfo() => showInfo = false;
 
     protected override async Task OnParametersSetAsync()
     {
-        if (!string.IsNullOrWhiteSpace(SessionId))
+        if (string.IsNullOrWhiteSpace(SessionId))
+            return;
+
+        try
         {
-            session = await Http.GetFromJsonAsync<JamSessionModel>($"/api/sessions/get-session-id/{SessionId}");
+            session = await Http.GetFromJsonAsync<JamSessionDto>(
+                $"api/sessions/get-session-id/{SessionId}");
 
             if (session != null)
             {
-                var fileName = "song.mp3";
-                AudioUrl = $"api/sessions/play-audio/{fileName}";
+                tracks = session.Tracks.ToList();
             }
+            else
+            {
+                tracks.Clear();
+            }
+
+            participants = await Http.GetFromJsonAsync<List<string>>(
+                $"api/sessions/{SessionId}/participants"
+            ) ?? new List<string>();
+        }
+        catch
+        {
+            errorMessage = "Failed to load session.";
         }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Inicijuojam JS tik kai jau turim trekų ir dar neinicijavom
+        if (!audioInitDone && tracks.Any())
+        {
+            audioInitDone = true;
+            await JS.InvokeVoidAsync("audioExclusiveInit");
+        }
+    }
+
+    private string BuildTrackUrl(AudioTrackDto track)
+        => $"api/sessions/play-audio/{track.Mood.ToString().ToLower()}/{track.FileName}";
+
     private async Task DeleteSession()
     {
-        if (session is null) return;
+        if (session is null)
+            return;
 
-        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Delete “{session.RoomName}”?");
-        if (!confirmed) return;
+        bool confirm = await JS.InvokeAsync<bool>("confirm", $"Delete “{session.RoomName}”?");
+        if (!confirm) return;
 
         isDeleting = true;
         errorMessage = null;
@@ -112,17 +147,56 @@
             }
             else
             {
-                var body = await resp.Content.ReadAsStringAsync();
-                errorMessage = $"Delete failed: {resp.StatusCode} {body}";
+                errorMessage = "Failed to delete session.";
             }
         }
         catch (Exception ex)
         {
-            errorMessage = $"Delete error: {ex.Message}";
+            errorMessage = ex.Message;
+        }
+
+        isDeleting = false;
+    }
+
+    private async Task LeaveSession()
+    {
+        if (session is null || string.IsNullOrWhiteSpace(SessionId))
+            return;
+
+        isLeaving = true;
+        errorMessage = null;
+
+        try
+        {
+            var displayName = await JS.InvokeAsync<string>("sessionStorage.getItem", "jam.displayName");
+            if (string.IsNullOrWhiteSpace(displayName))
+                displayName = "Guest";
+
+            var clientToken = await JS.InvokeAsync<string>("localStorage.getItem", "jamClientToken");
+
+            var req = new LeaveJamModel
+            {
+                SessionId = SessionId,
+                DisplayName = displayName,
+                ClientToken = clientToken
+            };
+
+            var resp = await Http.PostAsJsonAsync("api/sessions/leave-jam", req);
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                Console.WriteLine("leave-jam failed, status: " + resp.StatusCode);
+            }
+
+            Nav.NavigateTo("/join-jam");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to leave session: " + ex.Message;
         }
         finally
         {
-            isDeleting = false;
+            isLeaving = false;
         }
     }
 }
