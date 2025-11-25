@@ -40,18 +40,16 @@
 
     <div class="chat-inputbar">
         <input @ref="messageInputRef"
-               id="messageInput"
-               type="text"
-               placeholder="Message..."
-               @bind="Message"
-               @bind:event="oninput"
-               @onkeydown="HandleEnter" />
-        
-        <button class="btn-send" @onclick="Send">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
+              id="messageInput"
+              type="text"
+              class="chat-input"
+              placeholder="Message..."
+              @bind="Message"
+              @bind:event="oninput"
+              @onkeydown="HandleEnter" />
+
+        <button type="button" class="btn-send" @onclick="Send">
+            <i class="bi bi-send-fill"></i>
         </button>
     </div>
 </div>
@@ -62,14 +60,14 @@
 
     private HubConnection? hubConnection;
     private List<ChatMsg> Messages = new();
-    
-    private string Name = "Guest"; 
+
+    private string Name = "Guest";
     private string? Message;
-    private string? Avatar = "😎"; 
-    
+    private string? Avatar = "😎";
+
     private ElementReference messageInputRef;
 
-    public record ChatMsg(string User, string Text, DateTime Timestamp, string Avatar);
+    public record ChatMsg(string User, string Text, DateTime TimestampLocal, string Avatar);
 
     protected override async Task OnInitializedAsync()
     {
@@ -79,16 +77,23 @@
         if (!string.IsNullOrWhiteSpace(storedName)) Name = storedName;
         if (!string.IsNullOrWhiteSpace(storedAvatar)) Avatar = storedAvatar;
 
+        // 🔹 1) pirma užkraunam istoriją iš DB
+        await LoadHistory();
+
+        // 🔹 2) tada startuojam Hub'ą
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/chathub"))
             .Build();
 
-        hubConnection.On<string, string, string>("ReceiveMessage", (user, message, avatar) =>
-        {
-            Messages.Add(new ChatMsg(user, message, DateTime.Now, avatar));
-            StateHasChanged();
-            JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
-        });
+        hubConnection.On<string, string, string?, DateTime>(
+            "ReceiveMessage",
+            (user, text, avatar, sentAtUtc) =>
+            {
+                var localTime = sentAtUtc.ToLocalTime();
+                Messages.Add(new ChatMsg(user, text, localTime, avatar ?? ""));
+                InvokeAsync(StateHasChanged);
+                JS.InvokeVoidAsync("chatHelpers.scrollToBottom", "chatScroll");
+            });
 
         await hubConnection.StartAsync();
 
@@ -104,17 +109,16 @@
             return;
 
         var text = Message.Trim();
+        if (text.Length == 0)
+            return;
+
         var user = Name;
         var avatar = Avatar ?? "";
-        
-        Message = string.Empty;
 
+        Message = string.Empty;
         await JS.InvokeVoidAsync("chatHelpers.focus", "messageInput");
 
-        if (hubConnection is not null)
-        {
-            await hubConnection.SendAsync("SendMessage", user, text, avatar, SessionId);
-        }
+        await hubConnection.SendAsync("SendMessage", user, text, avatar, SessionId);
     }
 
     private async Task HandleEnter(KeyboardEventArgs e)
@@ -126,8 +130,35 @@
     public async ValueTask DisposeAsync()
     {
         if (hubConnection is not null)
-        {
             await hubConnection.DisposeAsync();
+    }
+
+    private async Task LoadHistory()
+    {
+        if (string.IsNullOrWhiteSpace(SessionId))
+            return;
+
+        try
+        {
+            var history = await Http.GetFromJsonAsync<List<ChatHistoryDto>>(
+                $"/api/chat/{SessionId}?take=50");
+
+            if (history is { Count: > 0 })
+            {
+                Messages = history
+                    .Select(h => new ChatMsg(
+                        h.User,
+                        h.Text,
+                        h.SentAtUtc.ToLocalTime(),
+                        h.Avatar ?? ""
+                    ))
+                    .ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Failed to load chat history: " + ex.Message);
         }
     }
+
 }
