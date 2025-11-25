@@ -109,14 +109,20 @@ else
                 <i>Only one track plays at a time (synchronized between participants).</i>
             </p>
 
-            @foreach (var t in tracks)
+            @for (var i = 0; i < tracks.Count; i++)
             {
+                var t = tracks[i];
+                var key = t.Id.ToString();
+
                 <div class="card-body">
                     <p class="fw-bold mb-2">@t.Title</p>
 
-                    <audio class="jam-audio" controls style="width:100%;" @ref="el => RegisterAudioRef(t.Id.ToString(), el)"
-                        @onplay="() => OnLocalTrackPlayAsync(t.Id.ToString())"
-                        @onpause="() => OnLocalTrackPauseAsync(t.Id.ToString())">
+                    <audio class="jam-audio"
+                           controls
+                           style="width:100%;"
+                           @ref="audioRefs[i]"
+                           @onplay="@(async () => await OnLocalTrackPlayAsync(key))"
+                           @onpause="@(async () => await OnLocalTrackPauseAsync(key))">
                         <source src="@BuildTrackUrl(t)" type="audio/mpeg" />
                     </audio>
                 </div>
@@ -176,7 +182,10 @@ else
     private bool showInfo = false;
 
     private HubConnection? playbackConnection;
-    private readonly Dictionary<string, ElementReference> audioRefs = new();
+
+    // Audio ref masyvas ir žemėlapis trackId -> indeksas
+    private ElementReference[] audioRefs = Array.Empty<ElementReference>();
+    private readonly Dictionary<string, int> trackIndexById = new();
 
     void ShowRoomInfo() => showInfo = true;
     void HideRoomInfo() => showInfo = false;
@@ -189,19 +198,30 @@ else
         try
         {
             session = await Http.GetFromJsonAsync<JamSessionDto>(
-            $"api/sessions/get-session-id/{SessionId}");
+                $"api/sessions/get-session-id/{SessionId}");
 
             if (session?.Tracks is not null && session.Tracks.Any())
             {
                 tracks = session.Tracks.ToList();
+
+                // paruošiam indeksus ir ref masyvą
+                trackIndexById.Clear();
+                for (int i = 0; i < tracks.Count; i++)
+                {
+                    trackIndexById[tracks[i].Id.ToString()] = i;
+                }
+
+                audioRefs = new ElementReference[tracks.Count];
             }
             else
             {
                 tracks.Clear();
+                trackIndexById.Clear();
+                audioRefs = Array.Empty<ElementReference>();
             }
 
             participants = await Http.GetFromJsonAsync<List<string>>(
-            $"api/sessions/{SessionId}/participants"
+                $"api/sessions/{SessionId}/participants"
             ) ?? new List<string>();
         }
         catch
@@ -226,29 +246,22 @@ else
         }
     }
 
-    private void RegisterAudioRef(string trackKey, ElementReference element)
-    {
-        audioRefs[trackKey] = element;
-    }
-
     private async Task EnsurePlaybackConnectionAsync()
     {
         if (playbackConnection is not null || string.IsNullOrWhiteSpace(SessionId))
             return;
 
         playbackConnection = new HubConnectionBuilder()
-        .WithUrl(Nav.ToAbsoluteUri("/playbackhub"))
-        .WithAutomaticReconnect()
-        .Build();
+            .WithUrl(Nav.ToAbsoluteUri("/playbackhub"))
+            .WithAutomaticReconnect()
+            .Build();
 
-        playbackConnection.On<JamCreator.Shared.Models.DTOs.PlaybackStateDto>(
-        "PlaybackChanged",
-        async dto =>
-        {
-            await HandlePlaybackChangedAsync(dto);
-        }
-        );
-
+        playbackConnection.On<PlaybackStateDto>(
+            "PlaybackChanged",
+            async dto =>
+            {
+                await HandlePlaybackChangedAsync(dto);
+            });
 
         await playbackConnection.StartAsync();
         await playbackConnection.InvokeAsync("JoinSession", SessionId);
@@ -259,8 +272,13 @@ else
         if (playbackConnection is null || string.IsNullOrWhiteSpace(SessionId))
             return;
 
-        if (!audioRefs.TryGetValue(trackKey, out var audioRef))
+        if (!trackIndexById.TryGetValue(trackKey, out var index))
             return;
+
+        if (index < 0 || index >= audioRefs.Length)
+            return;
+
+        var audioRef = audioRefs[index];
 
         var positionSeconds = await JS.InvokeAsync<double>("getTrackCurrentTime", audioRef);
 
@@ -272,15 +290,20 @@ else
         if (playbackConnection is null || string.IsNullOrWhiteSpace(SessionId))
             return;
 
-        if (!audioRefs.TryGetValue(trackKey, out var audioRef))
+        if (!trackIndexById.TryGetValue(trackKey, out var index))
             return;
+
+        if (index < 0 || index >= audioRefs.Length)
+            return;
+
+        var audioRef = audioRefs[index];
 
         var positionSeconds = await JS.InvokeAsync<double>("getTrackCurrentTime", audioRef);
 
         await playbackConnection.InvokeAsync("Pause", SessionId, positionSeconds);
     }
 
-    private async Task HandlePlaybackChangedAsync(JamCreator.Shared.Models.DTOs.PlaybackStateDto dto)
+    private async Task HandlePlaybackChangedAsync(PlaybackStateDto dto)
     {
         if (dto is null)
             return;
@@ -289,21 +312,26 @@ else
         if (string.IsNullOrWhiteSpace(currentSessionId))
             return;
 
-        // Įsitikiname, kad pekeitimas priklauso šiam kambariui
+        // Įsitikiname, kad pakeitimas priklauso šiam kambariui
         if (!dto.SessionId.ToString().Equals(currentSessionId, StringComparison.OrdinalIgnoreCase))
             return;
 
         var trackKey = dto.TrackId.ToString();
 
-        if (!audioRefs.TryGetValue(trackKey, out var audioRef))
+        if (!trackIndexById.TryGetValue(trackKey, out var index))
             return;
+
+        if (index < 0 || index >= audioRefs.Length)
+            return;
+
+        var audioRef = audioRefs[index];
 
         // Perduodame būseną į JS, kuris pajudina <audio>
         await JS.InvokeVoidAsync("syncTrackPlayback", audioRef, dto.Status.ToString(), dto.PositionSeconds);
     }
 
     private string BuildTrackUrl(AudioTrackDto track)
-    => $"api/sessions/play-audio/{track.Mood.ToString().ToLower()}/{track.FileName}";
+        => $"api/sessions/play-audio/{track.Mood.ToString().ToLower()}/{track.FileName}";
 
     private async Task DeleteSession()
     {
