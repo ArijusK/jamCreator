@@ -140,6 +140,8 @@ else
             var genre = await JS.InvokeAsync<string>("localStorage.getItem", "genre");
             var avatar = await JS.InvokeAsync<string>("localStorage.getItem", "avatar");
 
+            await JS.InvokeVoidAsync("sessionStorage.setItem", "jam.displayName", profile.Username);
+
             profile.Username = username ?? "";
             profile.FavoriteGenre = genre ?? "";
             profile.Avatar = string.IsNullOrWhiteSpace(avatar) ? availableAvatars.First() : avatar;

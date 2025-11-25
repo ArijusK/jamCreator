@@ -14,7 +14,7 @@ namespace JamCreator.Shared.Models
 
         [Required] public string JamSessionId { get; set; } = default!;
 
-        [JsonIgnore] public JamSessionModel JamSession { get; set; }
+        [JsonIgnore] public JamSessionModel JamSession { get; set; } = null!;
 
         // store the file name relative to wwwroot/audio 
         [Required, MaxLength(260)] public string FileName { get; set; } = default!;

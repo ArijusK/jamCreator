@@ -5,24 +5,25 @@
 namespace JamCreator.Migrations
 {
     /// <inheritdoc />
-    public partial class UpdateModels2 : Migration
+    public partial class UpdateModels : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
+            migrationBuilder.AddColumn<string>(
                 name: "ClientToken",
-                table: "Participants");
+                table: "Participants",
+                type: "character varying(100)",
+                maxLength: 100,
+                nullable: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
+            migrationBuilder.DropColumn(
                 name: "ClientToken",
-                table: "Participants",
-                type: "nvarchar(max)",
-                nullable: true);
+                table: "Participants");
         }
     }
 }

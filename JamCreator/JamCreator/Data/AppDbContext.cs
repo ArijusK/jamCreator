@@ -36,9 +36,9 @@ namespace JamCreator.Data
                 b.Property(s => s.Genre).HasMaxLength(60);
                 b.Property(s => s.Description).HasMaxLength(500);
                 b.Property(s => s.Password).HasMaxLength(100);
-                b.Property(s => s.Mood).HasMaxLength(60);
+                b.Property(s => s.Mood);
                 b.Property(s => s.CreatedAtUtc)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 // Concurrency token
                 b.Property(s => s.RowVersion)
@@ -69,7 +69,7 @@ namespace JamCreator.Data
                     .IsRequired();
 
                 b.Property(p => p.JoinedAtUtc)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 // Index for faster lookups by session and name
                 b.HasIndex(p => new { p.JamSessionId, p.DisplayName });
@@ -86,7 +86,7 @@ namespace JamCreator.Data
 
                 b.Property(t => t.Title).HasMaxLength(120);
                 b.Property(t => t.AddedAtUtc)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 // optional index by filename per session
                 b.HasIndex(t => new { t.JamSessionId, t.FileName });
