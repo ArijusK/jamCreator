@@ -5,26 +5,25 @@
 namespace JamCreator.Migrations
 {
     /// <inheritdoc />
-    public partial class fixChat : Migration
+    public partial class UpdateModels : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "SessionId",
-                table: "ChatMessages",
-                type: "character varying(64)",
-                maxLength: 64,
+            migrationBuilder.AddColumn<int>(
+                name: "Mood",
+                table: "Tracks",
+                type: "int",
                 nullable: false,
-                defaultValue: "");
+                defaultValue: 0);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "SessionId",
-                table: "ChatMessages");
+                name: "Mood",
+                table: "Tracks");
         }
     }
 }

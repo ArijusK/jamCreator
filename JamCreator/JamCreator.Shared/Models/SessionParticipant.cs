@@ -13,10 +13,8 @@ namespace JamCreator.Shared.Models
         public int Id { get; set; }
 
         [Required] public string JamSessionId { get; set; } = default!;
-        [JsonIgnore] public JamSessionModel JamSession { get; set; } = null!;
+        [JsonIgnore] public JamSessionModel JamSession { get; set; }
         [Required, MaxLength(100)] public string DisplayName { get; set; } = default!;
-        [MaxLength(100)]
-        public string? ClientToken { get; set; }
 
         public DateTime JoinedAtUtc { get; set; } = DateTime.UtcNow;
     }

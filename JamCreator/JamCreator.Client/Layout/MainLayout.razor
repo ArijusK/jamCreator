@@ -1,15 +1,5 @@
 ﻿@inherits LayoutComponentBase
 
-@if (!IsSessionPage)
-{
-    <div style="position:fixed; top:18px; right:24px; z-index:3000;">
-        <button class="avatar-btn" @onclick="GoToProfile">
-            <i class="bi bi-person-circle"></i>
-        </button>
-    </div>
-}
-
-
 <div class="page">
     <div class="sidebar">
         <NavMenu />
@@ -27,17 +17,3 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
-
-@code {
-    private bool IsSessionPage =>
-        Navigation.Uri.Contains("/session/", StringComparison.OrdinalIgnoreCase);
-        
-    [Inject] NavigationManager Navigation { get; set; } = default!;
-
-    private void GoToProfile()
-    {
-        Navigation.NavigateTo("/profile");
-    }
-}
-
-

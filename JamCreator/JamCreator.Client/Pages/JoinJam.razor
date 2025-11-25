@@ -30,45 +30,45 @@ else
 {
     <table class="table table-striped">
         <thead>
-        <tr>
-            <th>Room Name</th>
-            <th>Genre</th>
-            <th>Mood</th>
-            <th>Max People</th>
-            <th>Private</th>
-            <th>Joinable</th>
-            <th>Password</th>
-            <th></th>
-        </tr>
+            <tr>
+                <th>Room Name</th>
+                <th>Genre</th>
+                <th>Mood</th>
+                <th>Max People</th>
+                <th>Private</th>
+                <th>Joinable</th>
+                <th>Password</th>
+                <th></th>
+            </tr>
         </thead>
         <tbody>
-        @foreach (var session in sessions)
-        {
-            <tr>
-                <td>@session.RoomName</td>
-                <td>@session.Genre</td>
-                <td>@session.Mood</td>
-                <td>@session.MaxPeople</td>
-                <td>@(session.IsPrivate ? "Yes" : "No")</td>
-                <td>@(session.IsJoinable() ? "Yes" : "No")</td>
-                <td>
-                    @if (session.IsPrivate)
-                    {
-                        <input type="password"
-                               placeholder="Enter password"
-                               @bind="session.TempPassword"
-                               class="form-control" />
-                    }
-                </td>
-                <td>
-                    <button class="btn btn-primary"
-                            disabled="@(isJoining)"
-                            @onclick="() => Submit(session)">
-                        Join
-                    </button>
-                </td>
-            </tr>
-        }
+            @foreach (var session in sessions)
+            {
+                <tr>
+                    <td>@session.RoomName</td>
+                    <td>@session.Genre</td>
+                    <td>@session.Mood</td>
+                    <td>@session.MaxPeople</td>
+                    <td>@(session.IsPrivate ? "Yes" : "No")</td>
+                    <td>@(session.IsJoinable() ? "Yes" : "No")</td>
+                    <td>
+                        @if (session.IsPrivate)
+                        {
+                            <input type="password"
+                                   placeholder="Enter password"
+                                   @bind="session.TempPassword"
+                                   class="form-control" />
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-primary"
+                                disabled="@(!session.IsJoinable() || isJoining)"
+                                @onclick="() => Submit(session)">
+                            Join
+                        </button>
+                    </td>
+                </tr>
+            }
         </tbody>
     </table>
 }
@@ -79,16 +79,20 @@ else
     private bool isJoining = false;
     private string? errorMessage;
 
-    private string? userName;      // vardas tik šitam tabui
-    private string? clientToken;   // stabilus ID user'iui (visiems tabams)
+    // 🔹 Stabilus ID vienai naršyklei (kad tas pats žmogus neužimtų naujos vietos)
+    private string? clientToken;
+
+    // 🔹 Vartotojo vardas iš /profile (localStorage: chat.username)
+    private string? userName;
 
     protected override async Task OnInitializedAsync()
     {
+        Console.WriteLine("Test");
         try
         {
             isLoading = true;
 
-            // 1) ClientToken – stabilus kliento identifikatorius
+            // 1) Susikuriam arba nusiskaitom clientToken
             clientToken = await JS.InvokeAsync<string>("localStorage.getItem", "jamClientToken");
             if (string.IsNullOrWhiteSpace(clientToken))
             {
@@ -96,29 +100,17 @@ else
                 await JS.InvokeVoidAsync("localStorage.setItem", "jamClientToken", clientToken);
             }
 
-            // 2) Vardas TIK šiam tabui
-            var sessionName = await JS.InvokeAsync<string>("sessionStorage.getItem", "jam.displayName");
+            // 2) Nick iš profile / chat
+            userName = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
+            if (string.IsNullOrWhiteSpace(userName))
+                userName = "Guest";
 
-            // 3) Profilyje saugomas vardas (bendras visuose tabuose)
-            var profileName = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
-            if (string.IsNullOrWhiteSpace(profileName))
-                profileName = "Guest";
-
-            // 4) Jeigu profilio vardas pasikeitė → atnaujinam sessionStorage
-            if (string.IsNullOrWhiteSpace(sessionName) || sessionName != profileName)
-            {
-                userName = profileName;
-                await JS.InvokeVoidAsync("sessionStorage.setItem", "jam.displayName", userName);
-            }
-            else
-            {
-                userName = sessionName; // naudojam egzistuojantį
-            }
-
-            // 5) Užkraunam sesijas
+            // 3) Užkraunam sesijas
             sessions = await Http.GetFromJsonAsync<List<JamSessionModel>>("/api/sessions/get-sessions")
-                    ?? new List<JamSessionModel>();
-        }
+                       ?? new List<JamSessionModel>();
+
+            Logger.LogInformation("Loaded {count} sessions", sessions.Count);
+        }//try/catch
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to load sessions");
@@ -130,7 +122,6 @@ else
         }
     }
 
-
     private async Task Submit(JamSessionModel session)
     {
         try
@@ -138,20 +129,12 @@ else
             errorMessage = null;
             isJoining = true;
 
-            // dar kartą pasiimam vardą iš sessionStorage, jei kas pasikeitė šiame tabe
-            if (string.IsNullOrWhiteSpace(userName))
-            {
-                userName = await JS.InvokeAsync<string>("sessionStorage.getItem", "jam.displayName");
-                if (string.IsNullOrWhiteSpace(userName))
-                    userName = "Guest";
-            }
-
             var joinRequest = new JoinModel
             {
                 SessionId   = session.Id!,
                 Password    = session.IsPrivate ? session.TempPassword : null,
-                DisplayName = userName,
-                ClientToken = clientToken   
+                DisplayName = userName,       
+                ClientToken = clientToken     
             };
 
             var response = await Http.PostAsJsonAsync("/api/sessions/join-jam", joinRequest);
@@ -169,11 +152,10 @@ else
                     errorMessage = "This session is full. Choose a different one.";
                 else if (text.Contains("Incorrect password", StringComparison.OrdinalIgnoreCase))
                     errorMessage = "Incorrect password.";
-                else if (text.Contains("display name is already in use", StringComparison.OrdinalIgnoreCase))
-                    errorMessage = "This display name is already in use in this session. Choose another name in your profile.";
                 else
                     errorMessage = "Failed to join the session.";
 
+                // Auto-hide after 3 seconds
                 _ = Task.Run(async () =>
                 {
                     await Task.Delay(3000);
@@ -198,4 +180,3 @@ else
         errorMessage = null;
     }
 }
-

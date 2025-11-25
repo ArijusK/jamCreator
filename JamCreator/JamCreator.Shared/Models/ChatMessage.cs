@@ -17,9 +17,6 @@ namespace JamCreator.Shared.Models
         [MaxLength(16)]
         public string? Avatar { get; set; }
 
-        [Required, MaxLength(64)]
-        public string SessionId { get; set; } = default!;
-
         public DateTime SentAtUtc { get; set; } = DateTime.UtcNow;
     }
 }

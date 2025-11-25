@@ -144,7 +144,7 @@ namespace JamCreator.Controllers
                 return BadRequest("Invalid join request.");
 
             var session = await _sessions.GetByIdAsync(request.SessionId, ct);
-            if (session is null)
+            if (session is null) 
                 return NotFound("Session not found.");
 
             if (session.IsPrivate && session.Password != request.Password)
@@ -154,61 +154,25 @@ namespace JamCreator.Controllers
                 ? "Guest"
                 : request.DisplayName.Trim();
 
+            // VISADA pirma tikrinam kiek žmonių yra
             var participants = await _participants.ListAsync(
                 p => p.JamSessionId == session.Id,
                 ct
             );
 
-            var maxPeople = session.MaxPeople ?? int.MaxValue;
-
-            // 👇 Surandam, ar šitas klientas jau yra prisijungęs prie šito jam'o
-            SessionParticipant? sameClient = null;
-            if (!string.IsNullOrWhiteSpace(request.ClientToken))
-            {
-                sameClient = participants
-                    .FirstOrDefault(p => p.ClientToken == request.ClientToken);
-            }
-
-            if (sameClient is not null)
-            {
-                // Tas pats klientas grįžo – atnaujinam vardą, jei pasikeitė
-                if (!string.Equals(sameClient.DisplayName, name, StringComparison.Ordinal))
-                {
-                    sameClient.DisplayName = name;
-                    await _participants.UpdateAsync(sameClient, ct);
-                }
-
-                return Ok(new
-                {
-                    session.Id,
-                    session.RoomName,
-                    JoinedAs = name,
-                    AlreadyJoined = true
-                });
-            }
-
-            // Naujas klientas – tikrinam, ar nėra full
-            if (participants.Count >= maxPeople)
+            if (participants.Count >= session.MaxPeople)
                 return BadRequest("Session is full.");
 
-            // Nebedarom draudimo „tas pats vardas“ – ribojam pagal ClientToken
-            var newParticipant = new SessionParticipant
+            // tiesiog pridedam naują dalyvį (net jeigu vardas kartojasi)
+            await _participants.AddAsync(new SessionParticipant
             {
                 JamSessionId = session.Id,
-                DisplayName  = name,
-                ClientToken  = request.ClientToken
-            };
+                DisplayName  = name
+            }, ct);
 
-            await _participants.AddAsync(newParticipant, ct);
-
-            return Ok(new
-            {
-                session.Id,
-                session.RoomName,
-                JoinedAs = name,
-                AlreadyJoined = false
-            });
+            return Ok(new { session.Id, session.RoomName });
         }
+
 
 
         [HttpGet("play-audio/{mood}/{fileName}")]
@@ -249,9 +213,7 @@ namespace JamCreator.Controllers
 
             var participants = await _participants.ListAsync(
                 p => p.JamSessionId == req.SessionId &&
-                    p.DisplayName == req.DisplayName,
-                ct
-            );
+                    p.DisplayName == req.DisplayName, ct);
 
             if (!participants.Any())
                 return NoContent();
@@ -260,29 +222,6 @@ namespace JamCreator.Controllers
                 await _participants.DeleteAsync(p, ct);
 
             return NoContent();
-        }
-
-        // GET: api/sessions/{sessionId}/participants
-        [HttpGet("{sessionId}/participants")]
-        public async Task<IActionResult> GetParticipants(string sessionId, CancellationToken ct)
-        {
-            if (string.IsNullOrWhiteSpace(sessionId))
-                return BadRequest("Missing session id.");
-
-            var session = await _sessions.GetByIdAsync(sessionId, ct);
-            if (session is null)
-                return NotFound("Session not found.");
-
-            var participants = await _participants.ListAsync(
-                p => p.JamSessionId == sessionId,
-                ct
-            );
-
-            var result = participants
-                .Select(p => p.DisplayName)
-                .ToList();
-
-            return Ok(result);
         }
     }
 }
