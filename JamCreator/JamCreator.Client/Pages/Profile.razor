@@ -1,7 +1,9 @@
 @rendermode InteractiveWebAssembly
 @page "/profile"
 @using System.ComponentModel.DataAnnotations
+@using JamCreator.Shared.Models.DTOs
 @inject IJSRuntime JS
+@inject HttpClient Http
 
 <h1>Your Profile</h1>
 
@@ -53,8 +55,8 @@ else
         </div>
 
         <div class="btn-group" style="margin-top:0.5rem;">
-            <button type="submit" class="btn btn-success">Save</button>
-            <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+            <button type="submit" class="btn btn-success" disabled="@saving">Save</button>
+            <button type="button" class="btn btn-secondary" @onclick="CancelEdit" disabled="@saving">Cancel</button>
         </div>
     </EditForm>
 }
@@ -63,12 +65,29 @@ else
 {
     <p class="text-success" style="margin-top:0.5rem;">Profile saved successfully</p>
 }
+@if (!string.IsNullOrEmpty(error))
+{
+    <p class="text-danger" style="margin-top:0.5rem;">@error</p>
+}
 
 @code {
-    private UserProfile profile = new();
-    private bool hasProfile = false;
-    private bool isEditing = false;
-    private bool showSavedMessage = false;
+    // local UI model (DTO-like)
+    public class UserProfileVm
+    {
+        [Required(ErrorMessage = "Nickname is required")]
+        public string Username { get; set; } = string.Empty;
+        public string FavoriteGenre { get; set; } = string.Empty;
+        public string Avatar { get; set; } = "🎸";
+    }
+
+    private UserProfileVm profile = new();
+    private bool hasProfile;
+    private bool isEditing = true;
+    private bool showSavedMessage;
+    private bool saving;
+    private string? error;
+
+    private string clientId = string.Empty;
 
     private readonly List<string> availableAvatars = new()
     {
@@ -77,58 +96,129 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            var username = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
-            var genre = await JS.InvokeAsync<string>("localStorage.getItem", "genre");
-            var avatar = await JS.InvokeAsync<string>("localStorage.getItem", "avatar");
+        if (!firstRender) return;
 
-            if (!string.IsNullOrEmpty(username))
+        // Ensure stable clientId in localStorage
+        clientId = await JS.InvokeAsync<string>("localStorage.getItem", "profile.clientId");
+        if (string.IsNullOrWhiteSpace(clientId))
+        {
+            clientId = Guid.NewGuid().ToString("N");
+            await JS.InvokeVoidAsync("localStorage.setItem", "profile.clientId", clientId);
+        }
+
+        // Try load from DB
+        try
+        {
+            var dto = await Http.GetFromJsonAsync<UserProfileDto>($"/api/profile/{clientId}");
+            if (dto is not null)
             {
-                profile.Username = username;
+                profile.Username = dto.Username;
+                profile.FavoriteGenre = dto.FavoriteGenre;
+                profile.Avatar = string.IsNullOrWhiteSpace(dto.Avatar) ? availableAvatars.First() : dto.Avatar;
                 hasProfile = true;
                 isEditing = false;
             }
             else
             {
-                hasProfile = false;
-                isEditing = true;
+                // Not found → create initial state from any existing localStorage (optional)
+                var username = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
+                var genre = await JS.InvokeAsync<string>("localStorage.getItem", "genre");
+                var avatar = await JS.InvokeAsync<string>("localStorage.getItem", "avatar");
+
+                profile.Username = username ?? "";
+                profile.FavoriteGenre = genre ?? "";
+                profile.Avatar = string.IsNullOrWhiteSpace(avatar) ? availableAvatars.First() : avatar;
+
+                hasProfile = !string.IsNullOrWhiteSpace(profile.Username);
+                isEditing = !hasProfile;
             }
-
-            if (!string.IsNullOrEmpty(genre))
-                profile.FavoriteGenre = genre;
-
-            profile.Avatar = !string.IsNullOrEmpty(avatar) ? avatar : availableAvatars.First();
-
-            StateHasChanged();
         }
+        catch
+        {
+            // API 404? We'll remain in edit mode with defaults.
+            var username = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
+            var genre = await JS.InvokeAsync<string>("localStorage.getItem", "genre");
+            var avatar = await JS.InvokeAsync<string>("localStorage.getItem", "avatar");
+
+            await JS.InvokeVoidAsync("sessionStorage.setItem", "jam.displayName", profile.Username);
+
+            profile.Username = username ?? "";
+            profile.FavoriteGenre = genre ?? "";
+            profile.Avatar = string.IsNullOrWhiteSpace(avatar) ? availableAvatars.First() : avatar;
+
+            hasProfile = !string.IsNullOrWhiteSpace(profile.Username);
+            isEditing = !hasProfile;
+        }
+
+        StateHasChanged();
     }
 
     private async Task SaveProfile()
     {
-        await JS.InvokeVoidAsync("localStorage.setItem", "chat.username", profile.Username);
-        await JS.InvokeVoidAsync("localStorage.setItem", "genre", profile.FavoriteGenre);
-        await JS.InvokeVoidAsync("localStorage.setItem", "avatar", profile.Avatar);
-        hasProfile = true;
-        isEditing = false;
-        showSavedMessage = true;
+        error = null;
+        saving = true;
         StateHasChanged();
-        await Task.Delay(2000);
-        showSavedMessage = false;
-        StateHasChanged();
+
+        var dto = new UserProfileDto
+        {
+            Id = clientId,
+            Username = profile.Username,
+            FavoriteGenre = profile.FavoriteGenre,
+            Avatar = profile.Avatar
+        };
+
+        try
+        {
+            var resp = await Http.PutAsJsonAsync($"/api/profile/{clientId}", dto);
+            resp.EnsureSuccessStatusCode();
+
+            // mirror to localStorage (optional)
+            await JS.InvokeVoidAsync("localStorage.setItem", "chat.username", profile.Username);
+            await JS.InvokeVoidAsync("localStorage.setItem", "genre", profile.FavoriteGenre);
+            await JS.InvokeVoidAsync("localStorage.setItem", "avatar", profile.Avatar);
+
+            hasProfile = true;
+            isEditing = false;
+            showSavedMessage = true;
+            StateHasChanged();
+            await Task.Delay(2000);
+            showSavedMessage = false;
+        }
+        catch (Exception ex)
+        {
+            error = "Failed to save profile. " + ex.Message;
+        }
+        finally
+        {
+            saving = false;
+            StateHasChanged();
+        }
     }
 
     private void BeginEdit() => isEditing = true;
 
     private async Task DeleteProfile()
     {
-        await JS.InvokeVoidAsync("localStorage.removeItem", "chat.username");
-        await JS.InvokeVoidAsync("localStorage.removeItem", "genre");
-        await JS.InvokeVoidAsync("localStorage.removeItem", "avatar");
-        profile = new UserProfile { Avatar = availableAvatars.First() };
-        hasProfile = false;
-        isEditing = true;
-        StateHasChanged();
+        error = null;
+        try
+        {
+            var resp = await Http.DeleteAsync($"/api/profile/{clientId}");
+            if (!resp.IsSuccessStatusCode && resp.StatusCode != System.Net.HttpStatusCode.NotFound)
+                error = $"Delete failed: {(int)resp.StatusCode}";
+
+            // clear local cache
+            await JS.InvokeVoidAsync("localStorage.removeItem", "chat.username");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "genre");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "avatar");
+
+            profile = new UserProfileVm { Avatar = availableAvatars.First() };
+            hasProfile = false;
+            isEditing = true;
+        }
+        catch (Exception ex)
+        {
+            error = "Failed to delete profile. " + ex.Message;
+        }
     }
 
     private void CancelEdit()
@@ -136,16 +226,8 @@ else
         if (hasProfile)
             isEditing = false;
         else
-            profile = new UserProfile { Avatar = availableAvatars.First() };
+            profile = new UserProfileVm { Avatar = availableAvatars.First() };
     }
 
     private void SelectAvatar(string a) => profile.Avatar = a;
-
-    public class UserProfile
-    {
-        [Required(ErrorMessage = "Nickname is required")]
-        public string Username { get; set; } = string.Empty;
-        public string FavoriteGenre { get; set; } = string.Empty;
-        public string Avatar { get; set; } = string.Empty;
-    }
 }

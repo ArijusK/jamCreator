@@ -22,3 +22,20 @@
 *.tmp
 *.bak
 *.swp
+
+# Ignore coverage reports
+coverage-report/
+**/coverage-report/
+
+# Ignore test results (very important)
+TestResults/
+**/TestResults/
+
+# Ignore coverage output from coverlet & reportgenerator
+*.cobertura.xml
+*.coverage
+*.coveragexml
+coverage.xml
+
+# Ignore files generated during test runs
+*.trx

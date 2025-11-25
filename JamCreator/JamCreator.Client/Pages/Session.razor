@@ -1,80 +1,205 @@
 @page "/session/{SessionId}"
 @inject HttpClient Http
-@using JamCreator.Shared.Models
 @inject NavigationManager Nav
 @inject IJSRuntime JS
-
-<h3>Jam Session</h3>
+@using JamCreator.Shared.Models.DTOs
+@using JamCreator.Shared.Models
 
 @if (session is null)
 {
-    <p>Loading session...</p>
+    <div class="container mt-4">
+        <p><em>Loading session...</em></p>
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <p class="text-danger mt-2">@errorMessage</p>
+        }
+    </div>
 }
 else
 {
-    <ul>
-        <li><b>Room:</b> @session.RoomName</li>
-        <li><b>Genre:</b> @session.Genre</li>
-        <li><b>Max People:</b> @session.MaxPeople</li>
-        <li><b>Private:</b> @(session.IsPrivate ? "Yes" : "No")</li>
-        <li><b>Mood:</b> @session.Mood</li>
-        <li><b>Duration:</b> @session.DurationMinutes min</li>
-    </ul>
+    <div class="container mt-4 session-page">
 
-    <h4>Now Playing</h4>
-    <audio controls style="width:100%;max-width:420px">
-        <source src="@AudioUrl" type="audio/mpeg" />
-        Your browser does not support the audio element.
-    </audio>
+        <!-- ROOM HEADER -->
+        <div class="d-flex align-items-center mb-3">
+            <h3 class="me-3 mb-0">JAM SESSION: @session.RoomName</h3>
 
-    <!-- 🟥 Delete button at the bottom -->
-    <div style="margin-top: 2rem; text-align: center;">
-        <button class="btn btn-danger"
-                @onclick="DeleteSession"
-                disabled="@isDeleting">
-            @(isDeleting ? "Deleting..." : "Delete Session")
-        </button>
-        @if (!string.IsNullOrWhiteSpace(errorMessage))
+            <button class="btn btn-outline-info p-0 px-1"
+                    style="font-size:14px;height:22px;"
+                    @onclick="ShowRoomInfo">
+                <i class="bi bi-info-circle"></i>
+            </button>
+        </div>
+
+        <!-- ROOM INFO MODAL -->
+        @if (showInfo)
         {
-            <p style="color:red; margin-top:10px;">@errorMessage</p>
+            <div class="alert alert-light border shadow-sm p-3 mb-4">
+                <p><b>Genre:</b> @session.Genre</p>
+                <p><b>Mood:</b> @session.Mood</p>
+                <p><b>Max People:</b> @session.MaxPeople</p>
+                <p><b>Private:</b> @(session.IsPrivate ? "Yes" : "No")</p>
+                <p><b>Description:</b> @session.Description</p>
+
+                <button class="btn btn-sm btn-secondary" @onclick="HideRoomInfo">
+                    Close
+                </button>
+            </div>
         }
+
+        <!-- DVIEJŲ KOLONŲ LAYOUTAS -->
+        <div class="session-layout">
+            
+            <!-- KAIRĖ: playlist + participants + mygtukai -->
+            <div class="session-left">
+
+                <!-- PLAYLIST -->
+                <h5 class="mt-4 mb-2">Playlist</h5>
+
+                @if (tracks.Any())
+                {
+                    <p class="text-muted"><i>Only one track plays at a time.</i></p>
+
+                    @foreach (var t in tracks)
+                    {
+                        <div class="card-body">
+                            <p class="fw-bold mb-2">@t.Title</p>
+                            <audio class="jam-audio" controls style="width:100%;">
+                                <source src="@BuildTrackUrl(t)" type="audio/mpeg" />
+                            </audio>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted"><i>No tracks available.</i></p>
+                }
+
+                <!-- PARTICIPANTS -->
+                <h5 class="mt-4 mb-3">Participants</h5>
+
+                <div class="card shadow-sm p-3 mb-4" style="max-width: 320px;">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Online</span>
+                        <span class="badge bg-primary">
+                            @($"{participants?.Count ?? 0} / {session.MaxPeople?.ToString() ?? "?"}")
+                        </span>
+                    </div>
+
+                    @if (participants is null)
+                    {
+                        <div class="text-muted"><em>Loading...</em></div>
+                    }
+                    else if (participants.Count == 0)
+                    {
+                        <div class="text-muted"><em>No one here yet.</em></div>
+                    }
+                    else
+                    {
+                        <ul class="list-group">
+                            @foreach (var name in participants)
+                            {
+                                <li class="list-group-item d-flex align-items-center">
+                                    <span>@name</span>
+                                    <span class="ms-auto online-dot"></span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <!-- ACTION BUTTONS -->
+                <div class="text-center mt-4">
+                    <button class="btn btn-secondary me-2"
+                            @onclick="LeaveSession"
+                            disabled="@isLeaving">
+                        @(isLeaving ? "Leaving..." : "Leave Session")
+                    </button>
+
+                    <button class="btn btn-danger"
+                            @onclick="DeleteSession"
+                            disabled="@isDeleting">
+                        @(isDeleting ? "Deleting..." : "Delete Session")
+                    </button>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    <p class="text-danger text-center mt-2">@errorMessage</p>
+                }
+            </div>
+
+            <!-- DEŠINĖ: CHAT -->
+            <div class="session-right">
+                <Chat SessionId="@SessionId" />
+            </div>
+        </div>
     </div>
-
-    @if (!string.IsNullOrWhiteSpace(errorMessage))
-    {
-        <p style="color:red">@errorMessage</p>
-    }
-
 }
 
 @code {
     [Parameter] public string? SessionId { get; set; }
-    private JamSessionModel? session;
-    private string? AudioUrl;
-    private bool isDeleting;
+
+    private JamSessionDto? session;
+    private List<AudioTrackDto> tracks = new();
+    private bool isDeleting = false;
     private string? errorMessage;
+    private bool audioInitDone = false;
+    private List<string>? participants;
+    private bool isLeaving = false;
+    private bool showInfo = false;
+
+    void ShowRoomInfo() => showInfo = true;
+    void HideRoomInfo() => showInfo = false;
 
     protected override async Task OnParametersSetAsync()
     {
-        if (!string.IsNullOrWhiteSpace(SessionId))
-        {
-            session = await Http.GetFromJsonAsync<JamSessionModel>($"/api/sessions/get-session-id/{SessionId}");
+        if (string.IsNullOrWhiteSpace(SessionId))
+            return;
 
-            // Use the server endpoint to play the file
-            if (session != null)
+        try
+        {
+            session = await Http.GetFromJsonAsync<JamSessionDto>(
+                $"api/sessions/get-session-id/{SessionId}");
+
+            if (session?.Tracks is not null && session.Tracks.Any())
             {
-                var fileName = "song.mp3";
-                AudioUrl = $"api/sessions/play-audio/{fileName}";
+                tracks = session.Tracks.ToList();
             }
+            else
+            {
+                tracks.Clear();
+            }
+
+            participants = await Http.GetFromJsonAsync<List<string>>(
+                $"api/sessions/{SessionId}/participants"
+            ) ?? new List<string>();
+        }
+        catch
+        {
+            errorMessage = "Failed to load session.";
         }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Inicijuojam JS tik kai jau turim trekų ir dar neinicijavom
+        if (!audioInitDone && tracks.Any())
+        {
+            audioInitDone = true;
+            await JS.InvokeVoidAsync("audioExclusiveInit");
+        }
+    }
+
+    private string BuildTrackUrl(AudioTrackDto track)
+        => $"api/sessions/play-audio/{track.Mood.ToString().ToLower()}/{track.FileName}";
+
     private async Task DeleteSession()
     {
-        if (session is null) return;
+        if (session is null)
+            return;
 
-        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Delete “{session.RoomName}”?");
-        if (!confirmed) return;
+        bool confirm = await JS.InvokeAsync<bool>("confirm", $"Delete “{session.RoomName}”?");
+        if (!confirm) return;
 
         isDeleting = true;
         errorMessage = null;
@@ -84,22 +209,110 @@ else
             var resp = await Http.DeleteAsync($"api/sessions/delete-session/{session.Id}");
             if (resp.IsSuccessStatusCode)
             {
-                // Go back to list/home after delete
-                Nav.NavigateTo("/join-jam"); // or "/sessions" if you have a listing page
+                Nav.NavigateTo("/join-jam");
             }
             else
             {
-                var body = await resp.Content.ReadAsStringAsync();
-                errorMessage = $"Delete failed: {resp.StatusCode} {body}";
+                errorMessage = "Failed to delete session.";
             }
         }
         catch (Exception ex)
         {
-            errorMessage = $"Delete error: {ex.Message}";
+            errorMessage = ex.Message;
+        }
+
+        isDeleting = false;
+    }
+
+    private async Task LeaveSession()
+    {
+        if (session is null || string.IsNullOrWhiteSpace(SessionId))
+            return;
+
+        isLeaving = true;
+        errorMessage = null;
+
+        try
+        {
+            var displayName = await JS.InvokeAsync<string>("sessionStorage.getItem", "jam.displayName");
+            if (string.IsNullOrWhiteSpace(displayName))
+                displayName = "Guest";
+
+            var clientToken = await JS.InvokeAsync<string>("localStorage.getItem", "jamClientToken");
+
+            var req = new LeaveJamModel
+            {
+                SessionId = SessionId,
+                DisplayName = displayName,
+                ClientToken = clientToken
+            };
+
+            var resp = await Http.PostAsJsonAsync("api/sessions/leave-jam", req);
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                Console.WriteLine("leave-jam failed, status: " + resp.StatusCode);
+            }
+
+            Nav.NavigateTo("/join-jam");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to leave session: " + ex.Message;
         }
         finally
         {
-            isDeleting = false;
+            isLeaving = false;
         }
     }
 }
+
+<script>
+    // Leidžiam tik vieną audio vienu metu.
+    window.audioExclusiveInit = () => {
+        const audios = document.querySelectorAll('.jam-audio');
+        if (!audios.length) return;
+
+        audios.forEach(a => {
+            a.addEventListener('play', () => {
+                audios.forEach(b => {
+                    if (b !== a && !b.paused) {
+                        b.pause();
+                        b.currentTime = 0;
+                    }
+                });
+            });
+        });
+
+        console.log("audioExclusiveInit: wired", audios.length, "players");
+    };
+</script>
+
+<style>
+    .session-layout {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 20px;
+    }
+
+    .session-left {
+        width: 100%;
+    }
+
+    .session-right {
+        position: sticky;
+        top: 20px;
+    }
+
+    @@media (max-width: 768px) {
+        .session-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .session-right {
+            position: static;
+            margin-top: 20px;
+        }
+    }
+</style>
+
