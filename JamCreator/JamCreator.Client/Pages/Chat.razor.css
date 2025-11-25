@@ -1,48 +1,153 @@
-.chat-inputbar {
-  display: flex;              /* vietoj grid – flexbox */
+:root {
+  --brand-green: #16a34a;
+  --bg: #0a0f0a;        
+  --text: #e7fbe7;
+  --bubble-mine: #143b1e;
+  --bubble-theirs: #0f1e12;
+  
+  --input-text-default: #86efac;
+  --input-border-default: #1e3a24;
+  
+  --input-text-hover: #bbf7d0; 
+  --input-border-hover: #16a34a;
+}
+
+* { box-sizing: border-box; }
+
+::selection {
+  background-color: var(--brand-green);
+  color: #000;
+}
+
+.chat-shell {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  max-width: 900px;
+  height: min(80vh, 600px);
+  margin: 10px auto;
+  border: 1px solid #1c2a1c;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #0c140c, #0a0f0a);
+  overflow: hidden;
+}
+
+.chat-header {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(12, 20, 12, 0.8);
+  border-bottom: 1px solid #162016;
+}
+
+.chat-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--brand-green);
+  text-transform: uppercase;
+}
+
+.name-pill {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  background: #1a2d1f;
+  border-radius: 12px;
+  color: #86efac;
+  border: 1px solid #16a34a;
+}
+
+.chat-messages {
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #0a0f0a; 
+}
+
+.empty {
+  text-align: center;
+  color: #555;
+  margin-top: 20px;
+}
+
+.msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 85%;
+}
+.msg.mine { align-self: flex-end; align-items: flex-end; }
+.msg.theirs { align-self: flex-start; align-items: flex-start; }
+
+.meta {
+  font-size: 0.7rem;
+  color: #666;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.msg.mine .meta { flex-direction: row-reverse; }
+
+.bubble {
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  color: #ddd;
+  word-wrap: break-word;
+}
+
+.msg.mine .bubble {
+  background: var(--bubble-mine);
+  border-bottom-right-radius: 2px;
+  border: 1px solid #1e3a24;
+}
+.msg.theirs .bubble {
+  background: var(--bubble-theirs);
+  border-bottom-left-radius: 2px;
+  border: 1px solid #162016;
+}
+
+.chat-inputbar {
+  display: grid;
+  grid-template-columns: 1fr auto; 
   gap: 8px;
-  padding: 10px;
+  padding: 8px;
   background: #0e160e;
   border-top: 1px solid #162016;
 }
 
-/* didelis tekstinis laukas */
-.chat-inputbar .chat-input {
-  flex: 1 1 auto;             /* užima visą likusią vietą */
-  min-width: 0;               /* kad neišsprogdintų eilės */
-
+.chat-inputbar input {
+  width: 100%;
   padding: 8px 12px;
   border-radius: 8px;
   background: #0a0f0a;
-
+  
   color: var(--input-text-default);
   border: 1px solid var(--input-border-default);
-
+  
   outline: none !important;
   transition: all 0.2s ease;
 }
 
-.chat-inputbar .chat-input:focus {
+.chat-inputbar input:focus {
   border-color: var(--input-border-hover);
   color: var(--input-text-hover);
-  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.3);
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.3); 
 }
 
-.chat-inputbar .chat-input:hover {
+.chat-inputbar input:hover {
   border-color: #27472d;
   color: var(--input-text-hover);
 }
 
-.chat-inputbar .chat-input::placeholder {
+.chat-inputbar input::placeholder {
   color: #3f6244;
 }
 
-/* mažas siuntimo mygtukas */
-.chat-inputbar .btn-send {
-  flex: 0 0 40px;             /* fiksuotas plotis stulpelyje */
-  width: 40px;
-  height: 40px;
+.btn-send {
+  width: 36px;  
+  height: 36px;
   padding: 0;
   border: none;
   border-radius: 8px;
@@ -51,25 +156,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, transform 0.1s;
+  transition: background 0.2s;
+  outline: none;
 }
 
-.chat-inputbar .btn-send:focus {
-  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.5);
+.btn-send:focus {
+   box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.5);
 }
 
-.chat-inputbar .btn-send:hover {
+.btn-send:hover {
   background: #15803d;
-  transform: translateY(-1px);
 }
 
-/* pati ikonėlė */
-.chat-inputbar .btn-send i {
-  font-size: 18px;
-  color: #dcfce7;
-  line-height: 1;
+.btn-send svg {
+  width: 18px;
+  height: 18px;
+  color: #dcfce7; 
+  transition: color 0.2s;
 }
 
-.chat-inputbar .btn-send:hover i {
-  color: #ffffff;
+.btn-send:hover svg {
+    color: #ffffff;
 }

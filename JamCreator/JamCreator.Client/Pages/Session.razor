@@ -2,145 +2,79 @@
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject IJSRuntime JS
-@using JamCreator.Shared.Models.DTOs
-@using JamCreator.Shared.Models
 
-@if (session is null)
-{
-    <div class="container mt-4">
-        <p><em>Loading session...</em></p>
-        @if (!string.IsNullOrWhiteSpace(errorMessage))
-        {
-            <p class="text-danger mt-2">@errorMessage</p>
-        }
-    </div>
-}
-else
-{
-    <div class="container mt-4 session-page">
+<div class="session-container">
+    <h3>Jam Session</h3>
 
-        <!-- ROOM HEADER -->
-        <div class="d-flex align-items-center mb-3">
-            <h3 class="me-3 mb-0">JAM SESSION: @session.RoomName</h3>
+    @if (session is null)
+    {
+        <p>Loading session...</p>
+    }
+    else
+    {
+        <ul>
+            <li><b>Room:</b> @session.RoomName</li>
+            <li><b>Genre:</b> @session.Genre</li>
+            <li><b>Max People:</b> @session.MaxPeople</li>
+            <li><b>Private:</b> @(session.IsPrivate ? "Yes" : "No")</li>
+            <li><b>Mood:</b> @session.Mood</li>
+            <li><b>Duration:</b> @session.DurationMinutes min</li>
+        </ul>
 
-            <button class="btn btn-outline-info p-0 px-1"
-                    style="font-size:14px;height:22px;"
-                    @onclick="ShowRoomInfo">
-                <i class="bi bi-info-circle"></i>
+        <h4>Now Playing</h4>
+        <audio controls style="width:100%;max-width:420px">
+            <source src="@AudioUrl" type="audio/mpeg" />
+            Your browser does not support the audio element.
+        </audio>
+
+        <div style="margin: 20px auto; max-width: 900px; width: 100%;">
+            <Chat SessionId="@SessionId" />
+        </div>
+
+        <div style="margin-top: 2rem; text-align: center;">
+            <button class="btn btn-danger"
+                    @onclick="DeleteSession"
+                    disabled="@isDeleting">
+                @(isDeleting ? "Deleting..." : "Delete Session")
             </button>
+            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <p style="color:red; margin-top:10px;">@errorMessage</p>
+            }
         </div>
+    }
+</div>
 
-        <!-- ROOM INFO MODAL -->
-        @if (showInfo)
-        {
-            <div class="alert alert-light border shadow-sm p-3 mb-4">
-                <p><b>Genre:</b> @session.Genre</p>
-                <p><b>Mood:</b> @session.Mood</p>
-                <p><b>Max People:</b> @session.MaxPeople</p>
-                <p><b>Private:</b> @(session.IsPrivate ? "Yes" : "No")</p>
-                <p><b>Description:</b> @session.Description</p>
+<style>
+    .session-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        text-align: center;
+        padding: 20px;
+    }
 
-                <button class="btn btn-sm btn-secondary" @onclick="HideRoomInfo">
-                    Close
-                </button>
-            </div>
-        }
-
-        <!-- DVIEJŲ KOLONŲ LAYOUTAS -->
-        <div class="session-layout">
-            
-            <!-- KAIRĖ: playlist + participants + mygtukai -->
-            <div class="session-left">
-
-                <!-- PLAYLIST -->
-                <h5 class="mt-4 mb-2">Playlist</h5>
-
-                @if (tracks.Any())
-                {
-                    <p class="text-muted"><i>Only one track plays at a time.</i></p>
-
-                    @foreach (var t in tracks)
-                    {
-                        <div class="card-body">
-                            <p class="fw-bold mb-2">@t.Title</p>
-                            <audio class="jam-audio" controls style="width:100%;">
-                                <source src="@BuildTrackUrl(t)" type="audio/mpeg" />
-                            </audio>
-                        </div>
-                    }
-                }
-                else
-                {
-                    <p class="text-muted"><i>No tracks available.</i></p>
-                }
-
-                <!-- PARTICIPANTS -->
-                <h5 class="mt-4 mb-3">Participants</h5>
-
-                <div class="card shadow-sm p-3 mb-4" style="max-width: 320px;">
-                    <div class="d-flex justify-content-between mb-3">
-                        <span>Online</span>
-                        <span class="badge bg-primary">
-                            @($"{participants?.Count ?? 0} / {session.MaxPeople?.ToString() ?? "?"}")
-                        </span>
-                    </div>
-
-                    @if (participants is null)
-                    {
-                        <div class="text-muted"><em>Loading...</em></div>
-                    }
-                    else if (participants.Count == 0)
-                    {
-                        <div class="text-muted"><em>No one here yet.</em></div>
-                    }
-                    else
-                    {
-                        <ul class="list-group">
-                            @foreach (var name in participants)
-                            {
-                                <li class="list-group-item d-flex align-items-center">
-                                    <span>@name</span>
-                                    <span class="ms-auto online-dot"></span>
-                                </li>
-                            }
-                        </ul>
-                    }
-                </div>
-
-                <!-- ACTION BUTTONS -->
-                <div class="text-center mt-4">
-                    <button class="btn btn-secondary me-2"
-                            @onclick="LeaveSession"
-                            disabled="@isLeaving">
-                        @(isLeaving ? "Leaving..." : "Leave Session")
-                    </button>
-
-                    <button class="btn btn-danger"
-                            @onclick="DeleteSession"
-                            disabled="@isDeleting">
-                        @(isDeleting ? "Deleting..." : "Delete Session")
-                    </button>
-                </div>
-
-                @if (!string.IsNullOrWhiteSpace(errorMessage))
-                {
-                    <p class="text-danger text-center mt-2">@errorMessage</p>
-                }
-            </div>
-
-            <!-- DEŠINĖ: CHAT -->
-            <div class="session-right">
-                <Chat SessionId="@SessionId" />
-            </div>
-        </div>
-    </div>
-}
+    ul {
+        list-style-type: none;
+        padding: 0;
+        margin-bottom: 20px;
+    }
+    
+    ul li {
+        display: inline-block;
+        margin: 0 10px;
+        background: #1a2d1f;
+        padding: 5px 10px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+    }
+</style>
 
 @code {
-    [Parameter] public string? SessionId { get; set; }
+    [Parameter]
+    public string? SessionId { get; set; }
 
-    private JamSessionDto? session;
-    private List<AudioTrackDto> tracks = new();
+    private JamSessionModel? session;
+    private string? AudioUrl;
     private bool isDeleting = false;
     private string? errorMessage;
     private bool audioInitDone = false;
@@ -161,7 +95,7 @@ else
             session = await Http.GetFromJsonAsync<JamSessionDto>(
                 $"api/sessions/get-session-id/{SessionId}");
 
-            if (session?.Tracks is not null && session.Tracks.Any())
+            if (session != null)
             {
                 tracks = session.Tracks.ToList();
             }
@@ -209,7 +143,7 @@ else
             var resp = await Http.DeleteAsync($"api/sessions/delete-session/{session.Id}");
             if (resp.IsSuccessStatusCode)
             {
-                Nav.NavigateTo("/join-jam");
+                Nav.NavigateTo("/join-jam"); 
             }
             else
             {
@@ -266,53 +200,3 @@ else
         }
     }
 }
-
-<script>
-    // Leidžiam tik vieną audio vienu metu.
-    window.audioExclusiveInit = () => {
-        const audios = document.querySelectorAll('.jam-audio');
-        if (!audios.length) return;
-
-        audios.forEach(a => {
-            a.addEventListener('play', () => {
-                audios.forEach(b => {
-                    if (b !== a && !b.paused) {
-                        b.pause();
-                        b.currentTime = 0;
-                    }
-                });
-            });
-        });
-
-        console.log("audioExclusiveInit: wired", audios.length, "players");
-    };
-</script>
-
-<style>
-    .session-layout {
-        display: grid;
-        grid-template-columns: 1fr 350px;
-        gap: 20px;
-    }
-
-    .session-left {
-        width: 100%;
-    }
-
-    .session-right {
-        position: sticky;
-        top: 20px;
-    }
-
-    @@media (max-width: 768px) {
-        .session-layout {
-            grid-template-columns: 1fr;
-        }
-
-        .session-right {
-            position: static;
-            margin-top: 20px;
-        }
-    }
-</style>
-
