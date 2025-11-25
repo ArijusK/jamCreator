@@ -91,7 +91,8 @@ public class ChatHub : Hub
         };
         LogAction(log);
 
-        // 🔹 siunčiam visiems tame room’e, kartu ir timestamp’ą
+            if (Clients != null)
+        {
         await Clients.Group(sessionId).SendAsync(
             "ReceiveMessage",
             entity.User,
@@ -99,6 +100,7 @@ public class ChatHub : Hub
             entity.Avatar,
             entity.SentAtUtc
         );
+         }   
     }
 
     private void LogAction<T>(T info) where T : class, new()

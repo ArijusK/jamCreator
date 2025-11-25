@@ -1,5 +1,6 @@
 using JamCreator.Controllers;
 using JamCreator.Data;
+using JamCreator.Services;
 using JamCreator.Shared.Interfaces;
 using JamCreator.Shared.Models;
 using JamCreator.Shared.Models.DTOs;
@@ -23,19 +24,25 @@ public class SessionsControllerTests
 
     private static SessionsController CreateController(AppDbContext ctx)
     {
-        var sessionsRepoMock = new Mock<IRepository<JamSessionModel, string>>();
-        var participantsRepoMock = new Mock<IRepository<SessionParticipant, int>>();
-        var tracksRepoMock = new Mock<IRepository<AudioTrack, int>>();
+        var sessionsRepoMock      = new Mock<IRepository<JamSessionModel, string>>();
+        var participantsRepoMock  = new Mock<IRepository<SessionParticipant, int>>();
+        var tracksRepoMock        = new Mock<IRepository<AudioTrack, int>>();
+        var audioMoodMock         = new Mock<IAudioMoodService>();
 
         var envMock = new Mock<IWebHostEnvironment>();
-        envMock.SetupGet(e => e.ContentRootPath).Returns(Directory.GetCurrentDirectory());
+        var root    = Directory.GetCurrentDirectory();
+
+        // naudosim tą patį root kaip ir testuose
+        envMock.SetupGet(e => e.ContentRootPath).Returns(root);
+        envMock.SetupGet(e => e.WebRootPath).Returns(Path.Combine(root, "wwwroot"));
 
         return new SessionsController(
             sessionsRepoMock.Object,
             participantsRepoMock.Object,
             tracksRepoMock.Object,
             ctx,
-            envMock.Object);
+            envMock.Object,
+            audioMoodMock.Object);
     }
 
     [Fact]
@@ -52,13 +59,10 @@ public class SessionsControllerTests
     [Fact]
     public async Task GetById_UnknownId_ReturnsNotFound()
     {
-
         using var ctx = CreateContext();
         var controller = CreateController(ctx);
 
-
         var result = await controller.GetById("unknown-id", CancellationToken.None);
-
 
         Assert.IsType<NotFoundResult>(result.Result);
     }
@@ -66,15 +70,13 @@ public class SessionsControllerTests
     [Fact]
     public async Task GetById_ExistingSession_ReturnsOkWithDto()
     {
-
         using var ctx = CreateContext();
         var controller = CreateController(ctx);
 
         var session = new JamSessionModel
         {
-            Id = "session-1",
+            Id       = "session-1",
             RoomName = "My Jam",
-
         };
 
         ctx.JamSessions.Add(session);
@@ -82,8 +84,7 @@ public class SessionsControllerTests
 
         var actionResult = await controller.GetById("session-1", CancellationToken.None);
 
-
-        var ok = Assert.IsType<OkObjectResult>(actionResult.Result);
+        var ok  = Assert.IsType<OkObjectResult>(actionResult.Result);
         var dto = Assert.IsType<JamSessionDto>(ok.Value);
 
         Assert.Equal("session-1", dto.Id);
@@ -93,15 +94,17 @@ public class SessionsControllerTests
     [Fact]
     public async Task Create_ValidModel_ReturnsCreatedAndCallsRepository()
     {
-        // Arrange
         using var ctx = CreateContext();
 
-        var sessionsRepoMock = new Mock<IRepository<JamSessionModel, string>>();
+        var sessionsRepoMock     = new Mock<IRepository<JamSessionModel, string>>();
         var participantsRepoMock = new Mock<IRepository<SessionParticipant, int>>();
-        var tracksRepoMock = new Mock<IRepository<AudioTrack, int>>();
+        var tracksRepoMock       = new Mock<IRepository<AudioTrack, int>>();
+        var audioMoodMock        = new Mock<IAudioMoodService>();
 
         var envMock = new Mock<IWebHostEnvironment>();
-        envMock.SetupGet(e => e.ContentRootPath).Returns(Directory.GetCurrentDirectory());
+        var root    = Directory.GetCurrentDirectory();
+        envMock.SetupGet(e => e.ContentRootPath).Returns(root);
+        envMock.SetupGet(e => e.WebRootPath).Returns(Path.Combine(root, "wwwroot"));
 
         JamSessionModel? capturedSession = null;
 
@@ -115,56 +118,50 @@ public class SessionsControllerTests
             participantsRepoMock.Object,
             tracksRepoMock.Object,
             ctx,
-            envMock.Object);
+            envMock.Object,
+            audioMoodMock.Object);
 
         var model = new JamCreateModel
         {
-            RoomName = "Unit Test Room",
-            Genre = "Rock",
-            Description = "Test description",
-            IsPrivate = false,
-            Password = null,
-            Mood = JamMood.Chill,
-            MaxPeople = 5,
+            RoomName        = "Unit Test Room",
+            Genre           = "Rock",
+            Description     = "Test description",
+            IsPrivate       = false,
+            Password        = null,
+            Mood            = JamMood.Chill,
+            MaxPeople       = 5,
             DurationMinutes = 60,
-            AllowSkipVote = true
+            AllowSkipVote   = true
         };
 
-        // Act
         var result = await controller.Create(model, CancellationToken.None);
 
-        // Assert
         var created = Assert.IsType<CreatedResult>(result);
         Assert.NotNull(capturedSession);
 
-        // repository received the right data
         Assert.Equal("Unit Test Room", capturedSession!.RoomName);
-        Assert.Equal("Rock", capturedSession.Genre);
-        Assert.Equal(JamMood.Chill, capturedSession.Mood);
-        Assert.Equal(5, capturedSession.MaxPeople);
+        Assert.Equal("Rock",           capturedSession.Genre);
+        Assert.Equal(JamMood.Chill,    capturedSession.Mood);
+        Assert.Equal(5,                capturedSession.MaxPeople);
 
-        // location and value use the generated Id
         Assert.Equal($"/api/sessions/get-session-id/{capturedSession.Id}", created.Location);
         Assert.Equal(capturedSession.Id, created.Value);
     }
-    
+
     [Fact]
     public async Task Create_EmptyRoomName_ReturnsBadRequest()
     {
-        // Arrange
         using var ctx = CreateContext();
         var controller = CreateController(ctx);
 
         var model = new JamCreateModel
         {
-            RoomName = "",   // invalid
-            Genre = "Rock"
+            RoomName = "",
+            Genre    = "Rock"
         };
 
-        // Act
         var result = await controller.Create(model, CancellationToken.None);
 
-        // Assert
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("Invalid session data", badRequest.Value);
     }
@@ -172,53 +169,46 @@ public class SessionsControllerTests
     [Fact]
     public async Task GetAll_NoSessions_ReturnsEmptyList()
     {
-        // Arrange
         using var ctx = CreateContext();
         var controller = CreateController(ctx);
 
-        // Act
         var actionResult = await controller.GetAll(CancellationToken.None);
 
-        // Assert
-        var ok = Assert.IsType<OkObjectResult>(actionResult.Result);
+        var ok   = Assert.IsType<OkObjectResult>(actionResult.Result);
         var list = Assert.IsType<List<JamSessionDto>>(ok.Value);
 
         Assert.Empty(list);
     }
 
-        [Fact]
+    [Fact]
     public async Task GetAll_WithSessions_ReturnsOrderedDtos()
     {
-        // Arrange
         using var ctx = CreateContext();
         var controller = CreateController(ctx);
 
         var older = new JamSessionModel
         {
-            Id = "session-1",
-            RoomName = "Older",
+            Id           = "session-1",
+            RoomName     = "Older",
             CreatedAtUtc = DateTime.UtcNow.AddMinutes(-10)
         };
 
         var newer = new JamSessionModel
         {
-            Id = "session-2",
-            RoomName = "Newer",
+            Id           = "session-2",
+            RoomName     = "Newer",
             CreatedAtUtc = DateTime.UtcNow
         };
 
         ctx.JamSessions.AddRange(older, newer);
         await ctx.SaveChangesAsync();
 
-        // Act
         var actionResult = await controller.GetAll(CancellationToken.None);
 
-        // Assert
-        var ok = Assert.IsType<OkObjectResult>(actionResult.Result);
+        var ok   = Assert.IsType<OkObjectResult>(actionResult.Result);
         var list = Assert.IsType<List<JamSessionDto>>(ok.Value);
 
         Assert.Equal(2, list.Count);
-        // should be ordered by CreatedAtUtc descending
         Assert.Equal("Newer", list[0].RoomName);
         Assert.Equal("Older", list[1].RoomName);
     }
@@ -252,17 +242,13 @@ public class SessionsControllerTests
     {
         using var ctx = CreateContext();
 
-        // Arrange: we still add to EF (optional)
         ctx.JamSessions.Add(new JamSessionModel
         {
-            Id = "session-1",
-            RoomName = "Older",
+            Id           = "session-1",
+            RoomName     = "Older",
             CreatedAtUtc = DateTime.UtcNow.AddMinutes(-10)
         });
         await ctx.SaveChangesAsync();
-
-        // We can't access the mock via CreateController,
-        // so we create the controller MANUALLY for this test only.
 
         var sessionsRepoMock = new Mock<IRepository<JamSessionModel, string>>();
         sessionsRepoMock
@@ -270,26 +256,26 @@ public class SessionsControllerTests
             .ReturnsAsync(true);
 
         var participantsRepoMock = new Mock<IRepository<SessionParticipant, int>>();
-        var tracksRepoMock = new Mock<IRepository<AudioTrack, int>>();
+        var tracksRepoMock       = new Mock<IRepository<AudioTrack, int>>();
+        var audioMoodMock        = new Mock<IAudioMoodService>();
 
         var envMock = new Mock<IWebHostEnvironment>();
-        envMock.SetupGet(e => e.ContentRootPath).Returns(Directory.GetCurrentDirectory());
+        var root    = Directory.GetCurrentDirectory();
+        envMock.SetupGet(e => e.ContentRootPath).Returns(root);
+        envMock.SetupGet(e => e.WebRootPath).Returns(Path.Combine(root, "wwwroot"));
 
         var controller = new SessionsController(
             sessionsRepoMock.Object,
             participantsRepoMock.Object,
             tracksRepoMock.Object,
             ctx,
-            envMock.Object);
+            envMock.Object,
+            audioMoodMock.Object);
 
-        // Act
         var result = await controller.Delete("session-1", CancellationToken.None);
 
-        // Assert
         Assert.IsType<NoContentResult>(result);
     }
-
-
 
     [Fact]
     public async Task Join_NullRequest_ReturnsBadRequest()
@@ -311,7 +297,7 @@ public class SessionsControllerTests
 
         var request = new JoinModel
         {
-            SessionId = "",    // invalid
+            SessionId   = "",
             DisplayName = "User1"
         };
 
@@ -329,7 +315,7 @@ public class SessionsControllerTests
 
         var request = new JoinModel
         {
-            SessionId = "does-not-exist",
+            SessionId   = "does-not-exist",
             DisplayName = "User1"
         };
 
@@ -345,7 +331,7 @@ public class SessionsControllerTests
         using var ctx = CreateContext();
         var controller = CreateController(ctx);
 
-        var result = controller.PlayAudio("");
+        var result = controller.PlayAudio("chill", "");
 
         Assert.IsType<BadRequestResult>(result);
     }
@@ -356,11 +342,11 @@ public class SessionsControllerTests
         using var ctx = CreateContext();
         var controller = CreateController(ctx);
 
-        var result = controller.PlayAudio("does-not-exist.mp3");
+        var result = controller.PlayAudio("chill", "does-not-exist.mp3");
 
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        var message = Assert.IsType<string>(notFound.Value);
-        Assert.StartsWith("Not found:", message);
+        var message  = Assert.IsType<string>(notFound.Value);
+        Assert.StartsWith("File not found:", message);
     }
 
     [Fact]
@@ -368,33 +354,26 @@ public class SessionsControllerTests
     {
         using var ctx = CreateContext();
 
-        // === 1. Arrange: create the folder and file ===
+        var root    = Directory.GetCurrentDirectory();
+        var webRoot = Path.Combine(root, "wwwroot");
+        var mood    = "chill";
 
-        // Controller will use: <current folder>/wwwroot/audio
-        var root = Directory.GetCurrentDirectory();
-        var audioDir = Path.Combine(root, "wwwroot", "audio");
+        var audioDir = Path.Combine(webRoot, "audio", mood);
         Directory.CreateDirectory(audioDir);
 
         var fileName = "test-audio.mp3";
         var fullPath = Path.Combine(audioDir, fileName);
 
-        // Create a dummy file
         File.WriteAllText(fullPath, "dummy");
 
-        // === 2. Act ===
         var controller = CreateController(ctx);
-        var result = controller.PlayAudio(fileName);
 
-        // === 3. Assert ===
+        var result = controller.PlayAudio(mood, fileName);
+
         var fileResult = Assert.IsType<PhysicalFileResult>(result);
 
         Assert.Equal("audio/mpeg", fileResult.ContentType);
         Assert.True(fileResult.EnableRangeProcessing);
         Assert.Equal(fullPath, fileResult.FileName);
     }
-
-
-
 }
-
-/* com */
