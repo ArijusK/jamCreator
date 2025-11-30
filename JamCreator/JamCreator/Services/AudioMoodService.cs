@@ -37,6 +37,7 @@ namespace JamCreator.Services
                     FileName = Path.GetFileName(file),
                     Title = Path.GetFileNameWithoutExtension(file),
                     Mood = session.Mood,
+                    IsCustom     = false,
                     AddedAtUtc = DateTime.UtcNow
                 };
 

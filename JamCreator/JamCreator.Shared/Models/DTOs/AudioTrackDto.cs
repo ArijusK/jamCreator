@@ -12,5 +12,6 @@ namespace JamCreator.Shared.Models.DTOs
         public string? Title { get; set; }
         public JamMood Mood { get; set; }
         public TimeSpan? Duration { get; set; }
+        public bool IsCustom { get; set; }
     }
 }

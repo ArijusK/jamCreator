@@ -126,7 +126,8 @@ namespace JamCreator.Controllers
                             FileName = t.FileName,
                             Title    = t.Title,
                             Mood     = t.Mood,
-                            Duration = t.Duration
+                            Duration = t.Duration,
+                            IsCustom = t.IsCustom 
                         }).ToList()
                 })
                 .AsNoTracking()
@@ -231,15 +232,151 @@ namespace JamCreator.Controllers
             };
         }
 
+        // GET: api/sessions/play-audio/custom/{sessionId}/{fileName}
+        [HttpGet("play-audio/custom/{fileName}")]
+        public IActionResult PlayCustomAudio(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+                return BadRequest();
+
+             var safeName = Path.GetFileName(fileName); // apsauga
+
+            var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+            // pvz: wwwroot/audio/custom/{sessionId}/{fileName}
+            var filePath = Path.Combine(webRoot, "audio", "custom", safeName);
+
+            if (!System.IO.File.Exists(filePath))
+                return NotFound($"File not found: {filePath}");
+
+            return new PhysicalFileResult(filePath, "audio/mpeg")
+            {
+                EnableRangeProcessing = true
+            };
+        }
+
+        [HttpPost("{sessionId}/upload-track")]
+        public async Task<IActionResult> UploadAudio(string sessionId, IFormFile file, CancellationToken ct)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded.");
+
+            if (!file.FileName.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase))
+                return BadRequest("Only .mp3 files are allowed.");
+
+            var session = await _db.JamSessions.FirstOrDefaultAsync(s => s.Id == sessionId, ct);
+            if (session is null)
+                return NotFound("Session not found.");
+
+            var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+            var folder  = Path.Combine(webRoot, "audio", "custom");
+            Directory.CreateDirectory(folder);
+
+            // ✅ išsaugom su originaliu failo vardu ir plėtiniu (.mp3)
+            var safefileName = Path.GetFileName(file.FileName);
+            var savePath = Path.Combine(folder, safefileName);
+
+            using (var stream = System.IO.File.Create(savePath))
+                await file.CopyToAsync(stream, ct);
+
+            // ✅ ČIA TURI BŪTI ENTITY, NE DTO
+            var track = new AudioTrack
+            {
+                JamSessionId = session.Id,                         
+                FileName      = safefileName,                          
+                Title         = Path.GetFileNameWithoutExtension(safefileName),
+                Mood          = session.Mood,
+                IsCustom      = true,
+                AddedAtUtc    = DateTime.UtcNow
+            };
+
+            _db.Tracks.Add(track);  
+            await _db.SaveChangesAsync(ct);
+
+            return Ok(new AudioTrackDto
+            {
+                Id       = track.Id,
+                FileName = track.FileName,
+                Title    = track.Title,
+                Mood     = track.Mood,
+                IsCustom = true
+            });
+        }
+
+        [HttpDelete("{trackId}/delete-track")]
+        public async Task<IActionResult> DeleteTrack(int trackId, CancellationToken ct)
+        {
+            var track = await _db.Tracks.FirstOrDefaultAsync(t => t.Id == trackId, ct);
+            if (track is null)
+                return NotFound("Track not found.");
+
+            // Tik custom dainas šalinam iš disko
+            if (track.IsCustom)
+            {
+                var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+                var filePath = Path.Combine(webRoot, "audio", "custom", track.FileName);
+
+                if (System.IO.File.Exists(filePath))
+                    System.IO.File.Delete(filePath);
+            }
+
+            _db.Tracks.Remove(track);
+            await _db.SaveChangesAsync(ct);
+
+            return Ok(new { success = true });
+        }
+
+
+
+
         // DELETE: api/sessions/delete-session/{id}
         [HttpDelete("delete-session/{id}")]
         public async Task<IActionResult> Delete(string id, CancellationToken ct)
         {
-            if (string.IsNullOrWhiteSpace(id)) return BadRequest("Missing id.");
-            //Usage of async/await
+            if (string.IsNullOrWhiteSpace(id))
+                return BadRequest("Missing id.");
+
+            // 1) randam sessioną
+            var session = await _sessions.GetByIdAsync(id, ct);
+            if (session is null)
+                return NotFound("Session not found.");
+
+            // 2) susikraunam visus custom trackus šitam session
+            var customTracks = await _db.Tracks
+                .Where(t => t.JamSessionId == id && t.IsCustom)
+                .ToListAsync(ct);
+
+            // 3) failų kelias: wwwroot/audio/custom/{FileName}
+            var webRoot     = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+            var customFolder = Path.Combine(webRoot, "audio", "custom");
+
+            foreach (var track in customTracks)
+            {
+                if (string.IsNullOrWhiteSpace(track.FileName))
+                    continue;
+
+                var path = Path.Combine(customFolder, track.FileName);
+
+                if (System.IO.File.Exists(path))
+                {
+                    try
+                    {
+                        System.IO.File.Delete(path);
+                    }
+                    catch
+                    {
+                        // čia, jei nori, gali prisiloginti klaidą į failą ar loggerį
+                    }
+                }
+            }
+
+            // 4) trinam pačią session (cascade DB'e ištrins ir Tracks įrašus)
             var ok = await _sessions.DeleteByIdAsync(id, ct);
-            return ok ? NoContent() : NotFound("Session not found.");
+            if (!ok)
+                return NotFound("Session not found.");
+
+            return NoContent();
         }
+
         
         [HttpPost("leave-jam")]
         public async Task<IActionResult> Leave([FromBody] LeaveJamModel req, CancellationToken ct)

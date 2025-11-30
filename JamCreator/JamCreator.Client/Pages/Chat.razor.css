@@ -73,3 +73,16 @@
 .chat-inputbar .btn-send:hover i {
   color: #ffffff;
 }
+
+.chat-panel {
+  border: 2px solid #16a34a;      /* žalias rėmas */
+  border-radius: 16px;
+  padding: 16px;
+  background: #050b05;
+  max-width: 460px;
+  height: 420px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+

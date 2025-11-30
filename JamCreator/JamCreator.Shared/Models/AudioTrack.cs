@@ -23,6 +23,7 @@ namespace JamCreator.Shared.Models
 
         public TimeSpan? Duration { get; set; } 
         public JamMood Mood { get; set; }
+        public bool IsCustom { get; set; }
         public DateTime AddedAtUtc { get; set; } = DateTime.UtcNow;
     }
 }
