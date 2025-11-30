@@ -4,6 +4,10 @@
 @inject IJSRuntime JS
 @using JamCreator.Shared.Models.DTOs
 @using JamCreator.Shared.Models
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components
+@implements IAsyncDisposable
 
 @if (session is null)
 {
@@ -78,22 +82,25 @@ else
                     @foreach (var t in tracks)
                     {
                         <div class="card-body d-flex align-items-center justify-content-between">
-                                <div>
-                                    <p class="fw-bold mb-1">@t.Title</p>
-                                    <audio class="jam-audio" controls style="width:300px;">
-                                        <source src="@BuildTrackUrl(t)" type="audio/mpeg" />
-                                    </audio>
-                                </div>
-
-                                @if(t.IsCustom)
-                                {
-                                    <button class="btn btn-outline-danger btn-sm p-1"
-                                            style="border-radius: 50%;"
-                                            @onclick="() => DeleteTrack(t)">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                }
+                            <div>
+                                <p class="fw-bold mb-1">@t.Title</p>
+                                <audio class="jam-audio"
+                                       controls
+                                       style="width:300px;"
+                                       data-track-key="@t.Id">
+                                    <source src="@BuildTrackUrl(t)" type="audio/mpeg" />
+                                </audio>
                             </div>
+
+                            @if(t.IsCustom)
+                            {
+                                <button class="btn btn-outline-danger btn-sm p-1"
+                                        style="border-radius: 50%;"
+                                        @onclick="() => DeleteTrack(t)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            }
+                        </div>
                     }
                 }
                 else
@@ -179,6 +186,16 @@ else
     private string? selectedFileName = null;
     private bool isUploading = false;
     private string? uploadError;
+    private HubConnection? musicHub;
+    private bool hubInitialized;
+    private DotNetObjectReference<Session>? dotNetRef;
+    private bool autoRefreshRunning;
+    private CancellationTokenSource? refreshCts;
+    private int lastTrackCount;
+    private bool sessionDeleted;     
+    private bool redirectScheduled;   
+
+
 
     void ShowRoomInfo() => showInfo = true;
     void HideRoomInfo() => showInfo = false;
@@ -214,31 +231,97 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Inicijuojam JS tik kai jau turim trekų ir dar neinicijavom
+        if (sessionDeleted && !redirectScheduled)
+        {
+            redirectScheduled = true;
+            Nav.NavigateTo("/join-jam");
+            return;
+        }
+        if (firstRender)
+        {
+            await StartAutoRefreshAsync();
+        }
+
+        // 🔹 Audio ir sync JS inicijuojam tik kai jau yra trekų DOM'e
         if (!audioInitDone && tracks.Any())
         {
             audioInitDone = true;
             await JS.InvokeVoidAsync("audioExclusiveInit");
+
+            dotNetRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("sessionAudioSync.init", dotNetRef);
         }
+
+        // 🔹 Hubą kuriam tik kartą
+        if (firstRender && !hubInitialized && !string.IsNullOrWhiteSpace(SessionId))
+        {
+            hubInitialized = true;
+
+            if (musicHub is null)
+            {
+                musicHub = new HubConnectionBuilder()
+                    .WithUrl(Nav.ToAbsoluteUri("/musichub"))
+                    .WithAutomaticReconnect()
+                    .Build();
+
+                musicHub.On<string, double>("PlayTrack", async (trackKey, positionSeconds) =>
+                {
+                    await JS.InvokeVoidAsync("sessionAudioSync.playRemote", trackKey, positionSeconds);
+                });
+                musicHub.On<string, double>("PauseTrack", async (trackKey, positionSeconds) =>
+                {
+                    await JS.InvokeVoidAsync("sessionAudioSync.pauseRemote", trackKey, positionSeconds);
+                });
+
+                await musicHub.StartAsync();
+                await musicHub.SendAsync("JoinSessionGroup", SessionId);
+            }
+        }
+    }
+
+    [JSInvokable]
+    public async Task NotifyTrackPlayed(string trackKey, double positionSeconds)
+    {
+        if (musicHub is null || string.IsNullOrWhiteSpace(SessionId))
+            return;
+
+        await musicHub.SendAsync(
+            "BroadcastPlayTrack",
+            SessionId,
+            trackKey,
+            positionSeconds
+        );
+    }
+
+    [JSInvokable]
+    public async Task NotifyTrackPaused(string trackKey, double positionSeconds)
+    {
+        if (musicHub is null || string.IsNullOrWhiteSpace(SessionId))
+            return;
+
+        await musicHub.SendAsync(
+            "BroadcastPauseTrack",
+            SessionId,
+            trackKey,
+            positionSeconds
+        );
     }
 
     private string BuildTrackUrl(AudioTrackDto track)
     {
         if (track.IsCustom)
         {
-            // Įdėk leading slash, kad kelias būtų nuo root
             return $"/api/sessions/play-audio/custom/{Uri.EscapeDataString(track.FileName)}";
         }
 
         return $"/api/sessions/play-audio/{track.Mood.ToString().ToLower()}/{Uri.EscapeDataString(track.FileName)}";
     }
 
-
-
     private void OnFileSelected(InputFileChangeEventArgs e)
     {
         selectedFile = e.File;
         isFileSelected = selectedFile != null;
+        selectedFileName = selectedFile?.Name;
     }
 
     private async Task UploadTrack()
@@ -267,7 +350,6 @@ else
 
             if (resp.IsSuccessStatusCode)
             {
-                // reload session data
                 var updated = await Http.GetFromJsonAsync<JamSessionDto>($"/api/sessions/get-session-id/{SessionId}");
                 session = updated;
                 tracks = updated?.Tracks?.ToList() ?? new();
@@ -300,7 +382,6 @@ else
 
         if (resp.IsSuccessStatusCode)
         {
-            // pašalinam lokaliai
             tracks.Remove(track);
             StateHasChanged();
         }
@@ -310,8 +391,6 @@ else
             Console.WriteLine("Delete failed: " + msg);
         }
     }
-
-
 
     private async Task DeleteSession()
     {
@@ -385,6 +464,105 @@ else
             isLeaving = false;
         }
     }
+
+    public async ValueTask DisposeAsync()
+    {
+        refreshCts?.Cancel();
+        refreshCts?.Dispose();
+
+        if (musicHub is not null)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(SessionId))
+                {
+                    await musicHub.SendAsync("LeaveSessionGroup", SessionId);
+                }
+                await musicHub.DisposeAsync();
+            }
+            catch
+            {
+            }
+        }
+
+        dotNetRef?.Dispose();
+    }
+
+    private async Task StartAutoRefreshAsync()
+    {
+        if (autoRefreshRunning || string.IsNullOrWhiteSpace(SessionId))
+            return;
+
+        autoRefreshRunning = true;
+        refreshCts = new CancellationTokenSource();
+        var token = refreshCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(2), token);
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        break;
+                    }
+
+                    await RefreshSessionDataAsync();
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+            finally
+            {
+                autoRefreshRunning = false;
+            }
+        });
+    }
+
+    private async Task RefreshSessionDataAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SessionId))
+            return;
+
+        try
+        {
+            var updated = await Http.GetFromJsonAsync<JamSessionDto>($"api/sessions/get-session-id/{SessionId}");
+            if (updated != null)
+            {
+                session = updated;
+
+                var newTracks = updated.Tracks?.ToList() ?? new List<AudioTrackDto>();
+                if (newTracks.Count != lastTrackCount)
+                {
+                    tracks = newTracks;
+                    lastTrackCount = tracks.Count;
+                    audioInitDone = false;
+                }
+                else
+                {
+                    tracks = newTracks;
+                }
+            }
+
+            participants = await Http.GetFromJsonAsync<List<string>>(
+                $"api/sessions/{SessionId}/participants") ?? new List<string>();
+        }
+        catch
+        {
+            sessionDeleted = true;
+
+            session = null;
+            tracks.Clear();
+            participants = new List<string>();
+            errorMessage = "Failed to load session.";
+        }
+    }
+
+
 }
 
 <script>
@@ -405,6 +583,76 @@ else
         });
 
         console.log("audioExclusiveInit: wired", audios.length, "players");
+    };
+</script>
+
+<script>
+    // Sync tarp vartotojų: vienas paleidžia, kiti gauna PlayTrack per SignalR.
+    (function () {
+        const existing = window.sessionAudioSync || {};
+        let dotNetRef = existing._dotNetRef || null;
+
+        existing.init = function (dotNet) {
+            dotNetRef = dotNet;
+            existing._dotNetRef = dotNet;
+
+            const audios = document.querySelectorAll('.jam-audio');
+            audios.forEach(a => {
+                a.addEventListener('play', () => {
+                    const key = a.getAttribute('data-track-key') || '';
+                    const pos = a.currentTime || 0;
+                    if (dotNetRef && key) {
+                        dotNetRef.invokeMethodAsync('NotifyTrackPlayed', key, pos);
+                    }
+                });
+                a.addEventListener('pause', () => {
+                    const key = a.getAttribute('data-track-key') || '';
+                    const pos = a.currentTime || 0;
+                    if (dotNetRef && key) {
+                        dotNetRef.invokeMethodAsync('NotifyTrackPaused', key, pos);
+                    }
+                });
+            });
+
+            console.log("sessionAudioSync.init wired", audios.length, "players");
+        };
+
+        existing.playRemote = function (trackKey, position) {
+            const audio = document.querySelector(`audio[data-track-key="${trackKey}"]`);
+            if (!audio) {
+                console.warn("sessionAudioSync.playRemote: audio not found for key", trackKey);
+                return;
+            }
+
+            audio.currentTime = position || 0;
+            const p = audio.play();
+            if (p && p.catch) {
+                p.catch(err => console.warn("sessionAudioSync.playRemote blocked", err));
+            }
+        };
+        existing.pauseRemote = function (trackKey, position) {
+            const audio = document.querySelector(`audio[data-track-key="${trackKey}"]`);
+            if (!audio) {
+                console.warn("sessionAudioSync.pauseRemote: audio not found for key", trackKey);
+                return;
+            }
+
+            if (typeof position === "number") {
+                audio.currentTime = position;
+            }
+
+            audio.pause();
+        };
+
+        // paliekam enableSync, jei buvo pridėtas JoinJam puslapyje
+        window.sessionAudioSync = existing;
+    })();
+    window.showSessionDeletedModal = function () {
+        var modalEl = document.getElementById('sessionDeletedModal');
+        if (!modalEl) return;
+
+        var modal = new bootstrap.Modal(modalEl);
+        modal.show();
     };
 </script>
 
@@ -435,4 +683,3 @@ else
         }
     }
 </style>
-

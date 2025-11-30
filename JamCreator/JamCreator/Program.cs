@@ -70,7 +70,7 @@ app.UseRouting();
 app.MapRazorPages();
 app.MapControllers();
 app.MapFallbackToFile("index.html");
-
+app.MapHub<MusicHub>("/musichub");
 app.MapHub<ChatHub>("/chathub");
 
 app.Run();

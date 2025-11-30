@@ -79,8 +79,8 @@ else
     private bool isJoining = false;
     private string? errorMessage;
 
-    private string? userName;      // vardas tik šitam tabui
-    private string? clientToken;   // stabilus ID user'iui (visiems tabams)
+    private string? userName;
+    private string? clientToken; 
 
     protected override async Task OnInitializedAsync()
     {
@@ -88,23 +88,17 @@ else
         {
             isLoading = true;
 
-            // 1) ClientToken – stabilus kliento identifikatorius
             clientToken = await JS.InvokeAsync<string>("localStorage.getItem", "jamClientToken");
             if (string.IsNullOrWhiteSpace(clientToken))
             {
                 clientToken = Guid.NewGuid().ToString("N");
                 await JS.InvokeVoidAsync("localStorage.setItem", "jamClientToken", clientToken);
             }
-
-            // 2) Vardas TIK šiam tabui
             var sessionName = await JS.InvokeAsync<string>("sessionStorage.getItem", "jam.displayName");
-
-            // 3) Profilyje saugomas vardas (bendras visuose tabuose)
             var profileName = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
             if (string.IsNullOrWhiteSpace(profileName))
                 profileName = "Guest";
 
-            // 4) Jeigu profilio vardas pasikeitė → atnaujinam sessionStorage
             if (string.IsNullOrWhiteSpace(sessionName) || sessionName != profileName)
             {
                 userName = profileName;
@@ -112,10 +106,8 @@ else
             }
             else
             {
-                userName = sessionName; // naudojam egzistuojantį
+                userName = sessionName;
             }
-
-            // 5) Užkraunam sesijas
             sessions = await Http.GetFromJsonAsync<List<JamSessionModel>>("/api/sessions/get-sessions")
                     ?? new List<JamSessionModel>();
         }
@@ -136,9 +128,16 @@ else
         try
         {
             errorMessage = null;
+            try
+            {
+                await JS.InvokeVoidAsync("sessionAudioSync.enableSync");
+            }
+            catch
+            {
+                
+            }
             isJoining = true;
 
-            // dar kartą pasiimam vardą iš sessionStorage, jei kas pasikeitė šiame tabe
             if (string.IsNullOrWhiteSpace(userName))
             {
                 userName = await JS.InvokeAsync<string>("sessionStorage.getItem", "jam.displayName");
@@ -198,4 +197,33 @@ else
         errorMessage = null;
     }
 }
+
+<script>
+    (function () {
+        if (!window.sessionAudioSync) {
+            window.sessionAudioSync = {};
+        }
+
+        if (!window.sessionAudioSync.enableSync) {
+            window.sessionAudioSync.enableSync = function () {
+                try {
+                    const a = new Audio();
+                    a.muted = true;
+                    const p = a.play();
+                    if (p && p.then) {
+                        p.then(() => {
+                            a.pause();
+                            a.currentTime = 0;
+                            console.log("Autoplay unlocked on this tab (JoinJam)");
+                        }).catch(err => {
+                            console.warn("Cannot unlock autoplay", err);
+                        });
+                    }
+                } catch (e) {
+                    console.warn("enableSync error", e);
+                }
+            };
+        }
+    })();
+</script>
 
