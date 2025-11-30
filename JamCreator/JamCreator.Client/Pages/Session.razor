@@ -46,6 +46,22 @@ else
             </div>
         }
 
+        <h5>Upload Custom Track, Only .mp3 files</h5>
+
+        <InputFile OnChange="OnFileSelected" accept=".mp3" />
+
+        @if (selectedFileName is not null)
+        {
+            <p><b>Selected:</b> @selectedFileName</p>
+        }
+
+        <button class="btn btn-primary" @onclick="UploadTrack" disabled="@(!isFileSelected)"> 
+            @(isUploading ? "Uploading..." : "Upload Track")
+        </button>
+
+        <p style="color:red">@uploadError</p>
+
+
         <!-- DVIEJŲ KOLONŲ LAYOUTAS -->
         <div class="session-layout">
             
@@ -61,12 +77,23 @@ else
 
                     @foreach (var t in tracks)
                     {
-                        <div class="card-body">
-                            <p class="fw-bold mb-2">@t.Title</p>
-                            <audio class="jam-audio" controls style="width:100%;">
-                                <source src="@BuildTrackUrl(t)" type="audio/mpeg" />
-                            </audio>
-                        </div>
+                        <div class="card-body d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p class="fw-bold mb-1">@t.Title</p>
+                                    <audio class="jam-audio" controls style="width:300px;">
+                                        <source src="@BuildTrackUrl(t)" type="audio/mpeg" />
+                                    </audio>
+                                </div>
+
+                                @if(t.IsCustom)
+                                {
+                                    <button class="btn btn-outline-danger btn-sm p-1"
+                                            style="border-radius: 50%;"
+                                            @onclick="() => DeleteTrack(t)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                }
+                            </div>
                     }
                 }
                 else
@@ -147,6 +174,11 @@ else
     private List<string>? participants;
     private bool isLeaving = false;
     private bool showInfo = false;
+    private IBrowserFile? selectedFile;
+    private bool isFileSelected = false;
+    private string? selectedFileName;
+    private bool isUploading = false;
+    private string? uploadError;
 
     void ShowRoomInfo() => showInfo = true;
     void HideRoomInfo() => showInfo = false;
@@ -191,7 +223,95 @@ else
     }
 
     private string BuildTrackUrl(AudioTrackDto track)
-        => $"api/sessions/play-audio/{track.Mood.ToString().ToLower()}/{track.FileName}";
+    {
+        if (track.IsCustom)
+        {
+            // Įdėk leading slash, kad kelias būtų nuo root
+            return $"/api/sessions/play-audio/custom/{Uri.EscapeDataString(track.FileName)}";
+        }
+
+        return $"/api/sessions/play-audio/{track.Mood.ToString().ToLower()}/{Uri.EscapeDataString(track.FileName)}";
+    }
+
+
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        isFileSelected = selectedFile != null;
+    }
+
+    private async Task UploadTrack()
+    {
+        uploadError = null;
+        if (selectedFile is null)
+        {
+            uploadError = "No file selected!";
+            return;
+        }
+
+        try
+        {
+            isUploading = true;
+
+            using var content = new MultipartFormDataContent();
+            var stream = selectedFile.OpenReadStream(50 * 1024 * 1024); // 50MB
+            var fileContent = new StreamContent(stream);
+
+            fileContent.Headers.ContentType =
+                new System.Net.Http.Headers.MediaTypeHeaderValue(selectedFile.ContentType);
+
+            content.Add(fileContent, "file", selectedFile.Name);
+
+            var resp = await Http.PostAsync($"/api/sessions/{SessionId}/upload-track", content);
+
+            if (resp.IsSuccessStatusCode)
+            {
+                // reload session data
+                var updated = await Http.GetFromJsonAsync<JamSessionDto>($"/api/sessions/get-session-id/{SessionId}");
+                session = updated;
+                tracks = updated?.Tracks?.ToList() ?? new();
+            }
+            else
+            {
+                uploadError = "Upload failed.";
+            }
+        }
+        catch (Exception ex)
+        {
+            uploadError = ex.Message;
+        }
+        finally
+        {
+            isUploading = false;
+        }
+    }
+
+    private async Task DeleteTrack(AudioTrackDto track)
+    {
+        if (track == null) return;
+
+        var confirm = await JS.InvokeAsync<bool>("confirm",
+            $"Delete track '{track.Title}'?");
+
+        if (!confirm) return;
+
+        var resp = await Http.DeleteAsync($"api/sessions/{track.Id}/delete-track");
+
+        if (resp.IsSuccessStatusCode)
+        {
+            // pašalinam lokaliai
+            tracks.Remove(track);
+            StateHasChanged();
+        }
+        else
+        {
+            var msg = await resp.Content.ReadAsStringAsync();
+            Console.WriteLine("Delete failed: " + msg);
+        }
+    }
+
+
 
     private async Task DeleteSession()
     {
