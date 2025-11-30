@@ -1,2 +1,65 @@
 @page "/about"
-<h3>About Page</h3>
+
+<div class="container py-5 text-light">
+
+    <h1 class="mb-3">About JamCreator</h1>
+    <p>
+        JamCreator is a collaborative music room platform where people can listen to music together in real time,
+        chat, and build a playlist as a group.
+    </p>
+
+    <hr class="border-secondary" />
+
+    <section class="mb-4">
+        <h3>What can you do?</h3>
+        <ul>
+            <li><strong>Create jam sessions</strong> with a room name, genre, mood, duration and max people.</li>
+            <li><strong>Join existing sessions</strong> (public or password protected).</li>
+            <li><strong>Listen together</strong> – one track plays for everyone in the session.</li>
+            <li><strong>Use mood-based tracks</strong> – each session gets an automatic playlist that matches its mood.</li>
+            <li><strong>Upload your own .mp3 tracks</strong> into the session playlist.</li>
+            <li><strong>Chat in real time</strong> using the built-in chat next to the playlist.</li>
+            <li>
+                <strong>Synchronized playback</strong> – when one user starts or pauses a track,
+                everybody in the session hears the same thing at the same time.
+            </li>
+            <li>
+                <strong>Voting to skip</strong> – session participants will be able to vote
+                to skip the current song. If the majority agrees, the track will be skipped automatically.
+            </li>
+            <li>
+                <strong>Shared queue</strong> – users will be able to add their own songs to the
+                “play next” queue, so the whole session becomes a collaborative DJ experience.
+            </li>
+        </ul>
+    </section>
+
+    <section class="mb-4">
+        <h3>How sessions work</h3>
+        <ul>
+            <li>Each session has a <strong>maximum number of participants</strong>.</li>
+            <li>When someone leaves, their slot <strong>automatically becomes free</strong> for a new user.</li>
+            <li>Session data (participants, tracks, chat, profiles) is stored in the database via Entity Framework.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h3>Goal of JamCreator</h3>
+        <p>
+            The main goal of JamCreator is to recreate the feeling of listening to music together –
+            like sharing headphones with a friend or jamming at a small party – but online.
+            Sessions combine music, chat, and shared control of the playlist into one experience.
+        </p>
+    </section>
+
+</div>
+<style> 
+/* About.razor.css */
+h1, h3 {
+    font-weight: 600;
+}
+
+ul {
+    margin-left: 1.25rem;
+}
+</style>
