@@ -7,11 +7,13 @@
 
 
 <div class="chat-panel">
+    <!-- Header -->
     <div class="chat-header">
         <h2>Chat</h2>
         <div class="name-pill">@Name</div>
     </div>
 
+    <!-- Scroll’inama žinučių zona -->
     <div id="chatScroll" class="chat-messages">
         @if (Messages.Count == 0)
         {
@@ -38,17 +40,21 @@
         }
     </div>
 
+    <!-- Fiksuota input juosta apačioje -->
     <div class="chat-inputbar">
         <input @ref="messageInputRef"
-              id="messageInput"
-              type="text"
-              class="chat-input"
-              placeholder="Message..."
-              @bind="Message"
-              @bind:event="oninput"
-              @onkeydown="HandleEnter" />
+               id="messageInput"
+               type="text"
+               class="chat-input"
+               placeholder="Message..."
+               @bind="Message"
+               @bind:event="oninput"
+               @onkeydown="HandleEnter" />
 
-        <button type="button" class="btn-send" @onclick="Send">
+        <button type="button"
+                class="btn-send"
+                @onclick="Send"
+                disabled="@string.IsNullOrWhiteSpace(Message)">
             <i class="bi bi-send-fill"></i>
         </button>
     </div>
