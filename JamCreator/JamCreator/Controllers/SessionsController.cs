@@ -85,7 +85,8 @@ namespace JamCreator.Controllers
                     MaxPeople       = s.MaxPeople,
                     DurationMinutes = s.DurationMinutes,
                     AllowSkipVote   = s.AllowSkipVote,
-                    CreatedAtUtc    = s.CreatedAtUtc
+                    CreatedAtUtc    = s.CreatedAtUtc,
+                    Participants    = s.Participants.Select(p => new ParticipantDto { Id = p.Id }).ToList()
                 })
                 .ToListAsync(ct);
 
