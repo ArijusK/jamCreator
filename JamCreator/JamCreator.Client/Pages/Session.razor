@@ -329,8 +329,6 @@ else
     private int lastTrackCount;
     private bool sessionDeleted;     
     private bool redirectScheduled;   
-
-    // Voting / queue state
     private AudioTrackDto? currentTrack;
     private Dictionary<int, int> voteCounts = new();
     private int? winningTrackId;
@@ -383,8 +381,6 @@ else
         {
             await StartAutoRefreshAsync();
         }
-
-        // Audio ir sync JS inicijuojam tik kai jau yra trekų DOM'e
         if (!audioInitDone && tracks.Any())
         {
             audioInitDone = true;
@@ -393,8 +389,6 @@ else
             dotNetRef ??= DotNetObjectReference.Create(this);
             await JS.InvokeVoidAsync("sessionAudioSync.init", dotNetRef);
         }
-
-        // Hubą kuriam tik kartą
         if (firstRender && !hubInitialized && !string.IsNullOrWhiteSpace(SessionId))
         {
             hubInitialized = true;
@@ -409,8 +403,6 @@ else
                 musicHub.On<string, double>("PlayTrack", async (trackKey, positionSeconds) =>
                 {
                     await JS.InvokeVoidAsync("sessionAudioSync.playRemote", trackKey, positionSeconds);
-
-                    // atnaujinam Now playing ir šitam tabe
                     if (int.TryParse(trackKey, out var trackId))
                     {
                         var t = tracks.FirstOrDefault(x => x.Id == trackId);
@@ -425,23 +417,18 @@ else
                 {
                     await JS.InvokeVoidAsync("sessionAudioSync.pauseRemote", trackKey, positionSeconds);
                 });
-                // 🔹 kai naujas klientas paklausia "kas groja", hub'as atsako į šitą eventą
                 musicHub.On<string?, double, bool>("CurrentPlayback", async (trackKey, positionSeconds, isPlaying) =>
                 {
                     if (!isPlaying || string.IsNullOrWhiteSpace(trackKey))
                         return;
 
-                    // paleidžiam tą pačią dainą ir šiame tabe
                     await JS.InvokeVoidAsync("sessionAudioSync.playRemote", trackKey, positionSeconds);
                 });
-
-                // Balsų atnaujinimai
                 musicHub.On<Dictionary<int, int>, int?>("VotesUpdated", async (counts, winnerId) =>
                 {
                     voteCounts = counts ?? new Dictionary<int, int>();
                     winningTrackId = winnerId;
 
-                    // JEI šiuo metu niekas negroja ir yra laimėtojas – paleidžiam iš karto
                     if (awaitAutoPlayAfterVote && currentTrack is null && winningTrackId.HasValue)
                     {
                         var nextTrack = tracks.FirstOrDefault(t => t.Id == winningTrackId.Value);
@@ -449,10 +436,8 @@ else
                         {
                             var nextKey = nextTrack.Id.ToString();
 
-                            // 1) Paleidžiam lokaliai
                             await JS.InvokeVoidAsync("sessionAudioSync.playRemote", nextKey, 0);
 
-                            // 2) Pranešam kitiems per SignalR
                             if (musicHub is not null && !string.IsNullOrWhiteSpace(SessionId))
                             {
                                 await musicHub.SendAsync(
@@ -462,16 +447,12 @@ else
                                     0
                                 );
                             }
-
-                            // 3) Atnaujinam Now playing
                             currentTrack = nextTrack;
                         }
                         awaitAutoPlayAfterVote = false;
                     }
-
                     await InvokeAsync(StateHasChanged);
                 });
-
 
                 await musicHub.StartAsync();
                 await musicHub.SendAsync("JoinSessionGroup", SessionId);
@@ -522,7 +503,6 @@ else
     [JSInvokable]
     public async Task NotifyTrackEnded(string trackKey)
     {
-        // Kai baigiasi dabartinė daina – jei yra balsų, paleidžiam top dainą
         if (!int.TryParse(trackKey, out var endedId))
             return;
 
@@ -532,7 +512,6 @@ else
 
             if (voteCounts.Any() && tracks.Any())
             {
-                // top pagal balsus; jei lygios – mažiausias trackId
                 var nextId = voteCounts
                     .OrderByDescending(x => x.Value)
                     .ThenBy(x => x.Key)
@@ -543,10 +522,8 @@ else
                 {
                     var nextKey = nextTrack.Id.ToString();
 
-                    // paleidžiam pas save
                     await JS.InvokeVoidAsync("sessionAudioSync.playRemote", nextKey, 0);
 
-                    // ir pranešam kitiems
                     if (musicHub is not null && !string.IsNullOrWhiteSpace(SessionId))
                     {
                         await musicHub.SendAsync(
@@ -555,12 +532,10 @@ else
                             nextKey,
                             0
                         );
-
                         await musicHub.SendAsync("ClearVotesForTrack", SessionId, nextId);
                     }
                 }
             }
-
             await InvokeAsync(StateHasChanged);
         }
     }
@@ -596,7 +571,7 @@ else
             isUploading = true;
 
             using var content = new MultipartFormDataContent();
-            var stream = selectedFile.OpenReadStream(50 * 1024 * 1024); // 50MB
+            var stream = selectedFile.OpenReadStream(50 * 1024 * 1024);
             var fileContent = new StreamContent(stream);
 
             fileContent.Headers.ContentType =
@@ -670,28 +645,22 @@ else
         if (track is null)
             return;
 
-        // unikalus balsuotojo ID – naudojam jamClientToken
         var voterId = await JS.InvokeAsync<string>("localStorage.getItem", "jamClientToken");
         if (string.IsNullOrWhiteSpace(voterId))
         {
             voterId = Guid.NewGuid().ToString();
             await JS.InvokeVoidAsync("localStorage.setItem", "jamClientToken", voterId);
         }
-
         try
         {
-            // išsiunčiam balsą į hub’ą (VotesUpdated atnaujins Up next sąrašą visiems)
             await musicHub.SendAsync("VoteForTrack", SessionId, track.Id, voterId);
 
-            // 🔹 jei šiuo metu niekas negroja – iškart paleidžiam šitą dainą
             if (currentTrack is null)
             {
                 var key = track.Id.ToString();
 
-                // paleidžiam lokaliai
                 await JS.InvokeVoidAsync("sessionAudioSync.playRemote", key, 0);
 
-                // pranešam kitiems, kad reikia groti šitą dainą
                 await musicHub.SendAsync(
                     "BroadcastPlayTrack",
                     SessionId,
@@ -895,7 +864,6 @@ else
 }
 
 <script>
-    // Leidžiam tik vieną audio vienu metu.
     window.audioExclusiveInit = () => {
         const audios = document.querySelectorAll('.jam-audio');
         if (!audios.length) return;
@@ -916,7 +884,6 @@ else
 </script>
 
 <script>
-    // Sync tarp vartotojų: vienas paleidžia, kiti gauna PlayTrack per SignalR.
     (function () {
         const existing = window.sessionAudioSync || {};
         let dotNetRef = existing._dotNetRef || null;
@@ -959,12 +926,23 @@ else
                 return;
             }
 
-            audio.currentTime = position || 0;
+            if (typeof position === "number" && !isNaN(position)) {
+                audio.currentTime = position;
+            } else {
+                audio.currentTime = 0;
+            }
+
             const p = audio.play();
-            if (p && p.catch) {
-                p.catch(err => console.warn("sessionAudioSync.playRemote blocked", err));
+            if (p && typeof p.catch === "function") {
+                p.catch(err => {
+                    if (err && err.name === "AbortError") {
+                        return;
+                    }
+                    console.error("sessionAudioSync.playRemote error", err);
+                });
             }
         };
+
         existing.pauseRemote = function (trackKey, position) {
             const audio = document.querySelector(`audio[data-track-key="${trackKey}"]`);
             if (!audio) {
@@ -979,7 +957,6 @@ else
             audio.pause();
         };
 
-        // paliekam enableSync, jei buvo pridėtas JoinJam puslapyje
         window.sessionAudioSync = existing;
     })();
     window.showSessionDeletedModal = function () {

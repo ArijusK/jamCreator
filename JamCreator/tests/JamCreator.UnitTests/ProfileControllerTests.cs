@@ -57,7 +57,7 @@ public class ProfileControllerTests
         var actionResult = await controller.Get("user-1", CancellationToken.None);
 
         // Assert
-        Assert.Null(actionResult.Result); // direct DTO, no ActionResult wrapper
+        Assert.Null(actionResult.Result);
         var dto = Assert.IsType<UserProfileDto>(actionResult.Value);
 
         Assert.Equal("user-1", dto.Id);
@@ -75,9 +75,9 @@ public class ProfileControllerTests
 
         var dto = new UserProfileDto
         {
-            Username = "  Bob  ",          // check trimming
+            Username = "  Bob  ",  
             FavoriteGenre = "  Jazz ",
-            Avatar = ""                  // should become default 🎸
+            Avatar = ""    
         };
 
         // Act
@@ -88,9 +88,9 @@ public class ProfileControllerTests
         var returned = Assert.IsType<UserProfileDto>(ok.Value);
 
         Assert.Equal("user-2", returned.Id);
-        Assert.Equal("Bob", returned.Username);              // trimmed
-        Assert.Equal("Jazz", returned.FavoriteGenre);        // trimmed
-        Assert.Equal("🎸", returned.Avatar);                 // default avatar
+        Assert.Equal("Bob", returned.Username);            
+        Assert.Equal("Jazz", returned.FavoriteGenre);     
+        Assert.Equal("🎸", returned.Avatar);           
 
         // verify persisted entity
         var entity = await ctx.UserProfiles.FirstOrDefaultAsync(p => p.Id == "user-2");

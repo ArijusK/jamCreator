@@ -26,7 +26,6 @@ public class ChatControllerTests
 
         var sessionId = "room-1";
 
-        // older message
         ctx.ChatMessages.Add(new JamCreator.Shared.Models.ChatMessage
         {
             Id         = 1,
@@ -37,7 +36,6 @@ public class ChatControllerTests
             SentAtUtc  = DateTime.UtcNow.AddMinutes(-10)
         });
 
-        // newer message
         ctx.ChatMessages.Add(new JamCreator.Shared.Models.ChatMessage
         {
             Id         = 2,
@@ -51,8 +49,6 @@ public class ChatControllerTests
         await ctx.SaveChangesAsync();
 
         var controller = new ChatController(ctx);
-
-        // default take (50), bet filtruojama pagal sessionId
         var result = await controller.GetHistory(sessionId);
 
         var ok    = Assert.IsType<OkObjectResult>(result.Result);
@@ -60,8 +56,8 @@ public class ChatControllerTests
 
         var list = items.ToList();
         Assert.Equal(2, list.Count);
-        Assert.Equal("First",  list[0].Text);   // older first
-        Assert.Equal("Second", list[1].Text);   // newer last
+        Assert.Equal("First",  list[0].Text);
+        Assert.Equal("Second", list[1].Text); 
     }
 
     [Fact]
@@ -94,8 +90,6 @@ public class ChatControllerTests
         await ctx.SaveChangesAsync();
 
         var controller = new ChatController(ctx);
-
-        // take = 0 -> turi būti suklampintas į 1
         var result = await controller.GetHistory(sessionId, 0);
 
         var ok    = Assert.IsType<OkObjectResult>(result.Result);
@@ -103,7 +97,7 @@ public class ChatControllerTests
         var list  = items.ToList();
 
         Assert.Single(list);
-        Assert.Equal("New", list[0].Text); // newest only
+        Assert.Equal("New", list[0].Text);
     }
 
     [Fact]
@@ -129,8 +123,6 @@ public class ChatControllerTests
         await ctx.SaveChangesAsync();
 
         var controller = new ChatController(ctx);
-
-        // take = 1000 -> turi būti suklampintas į 200
         var result = await controller.GetHistory(sessionId, 1000);
 
         var ok    = Assert.IsType<OkObjectResult>(result.Result);

@@ -12,7 +12,6 @@ namespace JamCreator.Shared.Models
     {
         [Key]
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
-
         [Required, MaxLength(100)] public string RoomName { get; set; } = default!;
         [MaxLength(60)] public string? Genre { get; set; }
         [MaxLength(500)] public string? Description { get; set; }
@@ -22,25 +21,12 @@ namespace JamCreator.Shared.Models
         public int? MaxPeople { get; set; } = 4;
         public int? DurationMinutes { get; set; }
         public bool AllowSkipVote { get; set; }
-
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
-
-        // Navigation
         public List<SessionParticipant> Participants { get; set; } = new();
         public List<AudioTrack> Tracks { get; set; } = new();
-
-        // Concurrency (optional—but recommended)
         [Timestamp] public byte[]? RowVersion { get; set; }
-        
         [System.Text.Json.Serialization.JsonIgnore]
         public string? TempPassword { get; set; }
     }
-}
-
-
-
-public class JamSession
-{
-
 }
 

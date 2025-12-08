@@ -68,7 +68,6 @@ public class ChatHub : Hub
         if (string.IsNullOrWhiteSpace(cleanText))
             return;
 
-        // 🔹 įrašom į DB su SessionId
         var entity = new ChatMessage
         {
             User       = cleanUser,

@@ -83,10 +83,8 @@
         if (!string.IsNullOrWhiteSpace(storedName)) Name = storedName;
         if (!string.IsNullOrWhiteSpace(storedAvatar)) Avatar = storedAvatar;
 
-        // 🔹 1) pirma užkraunam istoriją iš DB
         await LoadHistory();
 
-        // 🔹 2) tada startuojam Hub'ą
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/chathub"))
             .Build();
