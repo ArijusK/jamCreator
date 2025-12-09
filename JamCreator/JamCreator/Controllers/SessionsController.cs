@@ -5,10 +5,10 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-using JamCreator.Shared.Models;          // JamSessionModel, SessionParticipant, AudioTrack
-using JamCreator.Shared.Models.DTOs;     // JamSessionDto, ParticipantDto, AudioTrackDto
-using JamCreator.Shared.Interfaces;      // IRepository<T,TKey>
-using JamCreator.Data;                   // AppDbContext
+using JamCreator.Shared.Models;         
+using JamCreator.Shared.Models.DTOs;     
+using JamCreator.Shared.Interfaces;      
+using JamCreator.Data;                   
 using JamCreator.Services; 
                                          
 namespace JamCreator.Controllers
@@ -23,7 +23,6 @@ namespace JamCreator.Controllers
         private readonly AppDbContext _db;
         private readonly IWebHostEnvironment _env;
         private readonly IAudioMoodService _audioMood;
-        //Dependency Injection everywhere where reasonable
         public SessionsController(
             IRepository<JamSessionModel, string> sessions,
             IRepository<SessionParticipant, int> participants,
@@ -70,7 +69,6 @@ namespace JamCreator.Controllers
         [HttpGet("get-sessions")]
         public async Task<ActionResult<IEnumerable<JamSessionDto>>> GetAll(CancellationToken ct)
         {
-            // Projekcija į DTO per DbContext (efektyvu ir išvengia ciklų)
             var list = await _db.JamSessions
                 .AsNoTracking()
                 .OrderByDescending(s => s.CreatedAtUtc)
@@ -131,7 +129,7 @@ namespace JamCreator.Controllers
                         }).ToList()
                 })
                 .AsNoTracking()
-                .AsSplitQuery() // jei yra kelios kolekcijos – padalina užklausas
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(ct);
 
             return dto is null ? NotFound() : Ok(dto);
@@ -162,7 +160,6 @@ namespace JamCreator.Controllers
 
             var maxPeople = session.MaxPeople ?? int.MaxValue;
 
-            // 👇 Surandam, ar šitas klientas jau yra prisijungęs prie šito jam'o
             SessionParticipant? sameClient = null;
             if (!string.IsNullOrWhiteSpace(request.ClientToken))
             {
@@ -172,7 +169,6 @@ namespace JamCreator.Controllers
 
             if (sameClient is not null)
             {
-                // Tas pats klientas grįžo – atnaujinam vardą, jei pasikeitė
                 if (!string.Equals(sameClient.DisplayName, name, StringComparison.Ordinal))
                 {
                     sameClient.DisplayName = name;
@@ -188,11 +184,9 @@ namespace JamCreator.Controllers
                 });
             }
 
-            // Naujas klientas – tikrinam, ar nėra full
             if (participants.Count >= maxPeople)
                 return BadRequest("Session is full.");
 
-            // Nebedarom draudimo „tas pats vardas“ – ribojam pagal ClientToken
             var newParticipant = new SessionParticipant
             {
                 JamSessionId = session.Id,
@@ -239,10 +233,9 @@ namespace JamCreator.Controllers
             if (string.IsNullOrWhiteSpace(fileName))
                 return BadRequest();
 
-             var safeName = Path.GetFileName(fileName); // apsauga
+             var safeName = Path.GetFileName(fileName);
 
             var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
-            // pvz: wwwroot/audio/custom/{sessionId}/{fileName}
             var filePath = Path.Combine(webRoot, "audio", "custom", safeName);
 
             if (!System.IO.File.Exists(filePath))
@@ -271,14 +264,12 @@ namespace JamCreator.Controllers
             var folder  = Path.Combine(webRoot, "audio", "custom");
             Directory.CreateDirectory(folder);
 
-            // ✅ išsaugom su originaliu failo vardu ir plėtiniu (.mp3)
             var safefileName = Path.GetFileName(file.FileName);
             var savePath = Path.Combine(folder, safefileName);
 
             using (var stream = System.IO.File.Create(savePath))
                 await file.CopyToAsync(stream, ct);
 
-            // ✅ ČIA TURI BŪTI ENTITY, NE DTO
             var track = new AudioTrack
             {
                 JamSessionId = session.Id,                         
@@ -309,7 +300,6 @@ namespace JamCreator.Controllers
             if (track is null)
                 return NotFound("Track not found.");
 
-            // Tik custom dainas šalinam iš disko
             if (track.IsCustom)
             {
                 var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
@@ -335,17 +325,14 @@ namespace JamCreator.Controllers
             if (string.IsNullOrWhiteSpace(id))
                 return BadRequest("Missing id.");
 
-            // 1) randam sessioną
             var session = await _sessions.GetByIdAsync(id, ct);
             if (session is null)
                 return NotFound("Session not found.");
 
-            // 2) susikraunam visus custom trackus šitam session
             var customTracks = await _db.Tracks
                 .Where(t => t.JamSessionId == id && t.IsCustom)
                 .ToListAsync(ct);
 
-            // 3) failų kelias: wwwroot/audio/custom/{FileName}
             var webRoot     = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
             var customFolder = Path.Combine(webRoot, "audio", "custom");
 
@@ -364,12 +351,11 @@ namespace JamCreator.Controllers
                     }
                     catch
                     {
-                        // čia, jei nori, gali prisiloginti klaidą į failą ar loggerį
+
                     }
                 }
             }
 
-            // 4) trinam pačią session (cascade DB'e ištrins ir Tracks įrašus)
             var ok = await _sessions.DeleteByIdAsync(id, ct);
             if (!ok)
                 return NotFound("Session not found.");

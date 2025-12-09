@@ -71,7 +71,6 @@ else
 }
 
 @code {
-    // local UI model (DTO-like)
     public class UserProfileVm
     {
         [Required(ErrorMessage = "Nickname is required")]
@@ -97,16 +96,12 @@ else
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-
-        // Ensure stable clientId in localStorage
         clientId = await JS.InvokeAsync<string>("localStorage.getItem", "profile.clientId");
         if (string.IsNullOrWhiteSpace(clientId))
         {
             clientId = Guid.NewGuid().ToString("N");
             await JS.InvokeVoidAsync("localStorage.setItem", "profile.clientId", clientId);
         }
-
-        // Try load from DB
         try
         {
             var dto = await Http.GetFromJsonAsync<UserProfileDto>($"/api/profile/{clientId}");
@@ -120,7 +115,6 @@ else
             }
             else
             {
-                // Not found → create initial state from any existing localStorage (optional)
                 var username = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
                 var genre = await JS.InvokeAsync<string>("localStorage.getItem", "genre");
                 var avatar = await JS.InvokeAsync<string>("localStorage.getItem", "avatar");
@@ -135,7 +129,6 @@ else
         }
         catch
         {
-            // API 404? We'll remain in edit mode with defaults.
             var username = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
             var genre = await JS.InvokeAsync<string>("localStorage.getItem", "genre");
             var avatar = await JS.InvokeAsync<string>("localStorage.getItem", "avatar");
@@ -171,8 +164,7 @@ else
         {
             var resp = await Http.PutAsJsonAsync($"/api/profile/{clientId}", dto);
             resp.EnsureSuccessStatusCode();
-
-            // mirror to localStorage (optional)
+            
             await JS.InvokeVoidAsync("localStorage.setItem", "chat.username", profile.Username);
             await JS.InvokeVoidAsync("localStorage.setItem", "genre", profile.FavoriteGenre);
             await JS.InvokeVoidAsync("localStorage.setItem", "avatar", profile.Avatar);
@@ -206,7 +198,6 @@ else
             if (!resp.IsSuccessStatusCode && resp.StatusCode != System.Net.HttpStatusCode.NotFound)
                 error = $"Delete failed: {(int)resp.StatusCode}";
 
-            // clear local cache
             await JS.InvokeVoidAsync("localStorage.removeItem", "chat.username");
             await JS.InvokeVoidAsync("localStorage.removeItem", "genre");
             await JS.InvokeVoidAsync("localStorage.removeItem", "avatar");

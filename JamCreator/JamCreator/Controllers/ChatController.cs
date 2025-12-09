@@ -23,7 +23,7 @@ public class ChatController : ControllerBase
 
         var items = await _db.ChatMessages
             .AsNoTracking()
-            .Where(m => m.SessionId == sessionId)     // 🔹 tik šito kambario žinutės
+            .Where(m => m.SessionId == sessionId)
             .OrderByDescending(m => m.SentAtUtc)
             .Take(take)
             .Select(m => new ChatMessageDto

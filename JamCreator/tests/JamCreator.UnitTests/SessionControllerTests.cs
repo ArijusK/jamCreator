@@ -31,8 +31,6 @@ public class SessionsControllerTests
 
         var envMock = new Mock<IWebHostEnvironment>();
         var root    = Directory.GetCurrentDirectory();
-
-        // naudosim tą patį root kaip ir testuose
         envMock.SetupGet(e => e.ContentRootPath).Returns(root);
         envMock.SetupGet(e => e.WebRootPath).Returns(Path.Combine(root, "wwwroot"));
 
