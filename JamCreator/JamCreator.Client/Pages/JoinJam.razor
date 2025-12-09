@@ -3,6 +3,7 @@
 @using System.Text.Json
 @using JamCreator.Shared.Models
 @using JamCreator.Shared.Extensions
+@implements IAsyncDisposable
 @inject ILogger<JoinJam> Logger
 @inject HttpClient Http
 @inject NavigationManager Navigation
@@ -35,6 +36,7 @@ else
             <th>Genre</th>
             <th>Mood</th>
             <th>Max People</th>
+            <th>Online</th>
             <th>Private</th>
             <th>Joinable</th>
             <th>Password</th>
@@ -49,6 +51,11 @@ else
                 <td>@session.Genre</td>
                 <td>@session.Mood</td>
                 <td>@session.MaxPeople</td>
+                <td>
+                    <span class="badge bg-success">
+                        @(session.Participants?.Count ?? 0)
+                    </span>
+                </td>
                 <td>@(session.IsPrivate ? "Yes" : "No")</td>
                 <td>@(session.IsJoinable() ? "Yes" : "No")</td>
                 <td>
@@ -80,69 +87,113 @@ else
     private string? errorMessage;
 
     private string? userName;
-    private string? clientToken; 
+    private string? clientToken;
+    
+    private CancellationTokenSource? _cts;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             isLoading = true;
-
-            clientToken = await JS.InvokeAsync<string>("localStorage.getItem", "jamClientToken");
-            if (string.IsNullOrWhiteSpace(clientToken))
-            {
-                clientToken = Guid.NewGuid().ToString("N");
-                await JS.InvokeVoidAsync("localStorage.setItem", "jamClientToken", clientToken);
-            }
-            var sessionName = await JS.InvokeAsync<string>("sessionStorage.getItem", "jam.displayName");
-            var profileName = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
-            if (string.IsNullOrWhiteSpace(profileName))
-                profileName = "Guest";
-
-            if (string.IsNullOrWhiteSpace(sessionName) || sessionName != profileName)
-            {
-                userName = profileName;
-                await JS.InvokeVoidAsync("sessionStorage.setItem", "jam.displayName", userName);
-            }
-            else
-            {
-                userName = sessionName;
-            }
-            sessions = await Http.GetFromJsonAsync<List<JamSessionModel>>("/api/sessions/get-sessions")
-                    ?? new List<JamSessionModel>();
+            await InitializeUserTokensAsync();
+            await LoadSessionsAsync(); 
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to load sessions");
-            errorMessage = "Failed to load sessions. Please try again later.";
+            errorMessage = "Failed to load sessions.";
         }
         finally
         {
             isLoading = false;
         }
+
+        _cts = new CancellationTokenSource();
+        _ = StartAutoRefreshAsync(_cts.Token);
     }
 
+    private async Task LoadSessionsAsync()
+    {
+        var result = await Http.GetFromJsonAsync<List<JamSessionModel>>("/api/sessions/get-sessions");
+        if (result != null)
+        {
+            foreach (var newSession in result)
+            {
+                var existing = sessions.FirstOrDefault(s => s.Id == newSession.Id);
+                if (existing != null && !string.IsNullOrEmpty(existing.TempPassword))
+                {
+                    newSession.TempPassword = existing.TempPassword;
+                }
+            }
+            sessions = result;
+        }
+    }
+
+    private async Task StartAutoRefreshAsync(CancellationToken token)
+    {
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(3000, token);
+                await LoadSessionsAsync();
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_cts != null)
+        {
+            _cts.Cancel();
+            _cts.Dispose();
+            _cts = null;
+        }
+    }
+
+    private async Task InitializeUserTokensAsync()
+    {
+        clientToken = await JS.InvokeAsync<string>("localStorage.getItem", "jamClientToken");
+        if (string.IsNullOrWhiteSpace(clientToken))
+        {
+            clientToken = Guid.NewGuid().ToString("N");
+            await JS.InvokeVoidAsync("localStorage.setItem", "jamClientToken", clientToken);
+        }
+        
+        var sessionName = await JS.InvokeAsync<string>("sessionStorage.getItem", "jam.displayName");
+        var profileName = await JS.InvokeAsync<string>("localStorage.getItem", "chat.username");
+        
+        if (string.IsNullOrWhiteSpace(profileName)) profileName = "Guest";
+
+        if (string.IsNullOrWhiteSpace(sessionName) || sessionName != profileName)
+        {
+            userName = profileName;
+            await JS.InvokeVoidAsync("sessionStorage.setItem", "jam.displayName", userName);
+        }
+        else
+        {
+            userName = sessionName;
+        }
+    }
 
     private async Task Submit(JamSessionModel session)
     {
         try
         {
             errorMessage = null;
-            try
-            {
-                await JS.InvokeVoidAsync("sessionAudioSync.enableSync");
-            }
-            catch
-            {
-                
-            }
-            isJoining = true;
+            try { await JS.InvokeVoidAsync("sessionAudioSync.enableSync"); } catch {}
 
+            isJoining = true;
+            
             if (string.IsNullOrWhiteSpace(userName))
             {
                 userName = await JS.InvokeAsync<string>("sessionStorage.getItem", "jam.displayName");
-                if (string.IsNullOrWhiteSpace(userName))
-                    userName = "Guest";
+                if (string.IsNullOrWhiteSpace(userName)) userName = "Guest";
             }
 
             var joinRequest = new JoinModel
@@ -163,28 +214,20 @@ else
             else
             {
                 var text = await response.Content.ReadAsStringAsync();
-
                 if (text.Contains("Session is full", StringComparison.OrdinalIgnoreCase))
-                    errorMessage = "This session is full. Choose a different one.";
+                    errorMessage = "This session is full.";
                 else if (text.Contains("Incorrect password", StringComparison.OrdinalIgnoreCase))
                     errorMessage = "Incorrect password.";
-                else if (text.Contains("display name is already in use", StringComparison.OrdinalIgnoreCase))
-                    errorMessage = "This display name is already in use in this session. Choose another name in your profile.";
                 else
-                    errorMessage = "Failed to join the session.";
+                    errorMessage = "Failed to join.";
 
-                _ = Task.Run(async () =>
-                {
-                    await Task.Delay(3000);
-                    errorMessage = null;
-                    await InvokeAsync(StateHasChanged);
-                });
+                _ = Task.Run(async () => { await Task.Delay(3000); errorMessage = null; await InvokeAsync(StateHasChanged); });
             }
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error joining session");
-            errorMessage = "Unexpected error occurred while joining.";
+            errorMessage = "Unexpected error.";
         }
         finally
         {
@@ -192,10 +235,7 @@ else
         }
     }
 
-    private void CloseAlert()
-    {
-        errorMessage = null;
-    }
+    private void CloseAlert() => errorMessage = null;
 }
 
 <script>
@@ -226,4 +266,3 @@ else
         }
     })();
 </script>
-

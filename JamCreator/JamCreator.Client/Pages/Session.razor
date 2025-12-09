@@ -188,35 +188,51 @@ else
                 <!-- PARTICIPANTS -->
                 <h5 class="mt-4 mb-3">Participants</h5>
 
-                <div class="card shadow-sm p-3 mb-4" style="max-width: 320px;">
-                    <div class="d-flex justify-content-between mb-3">
-                        <span>Online</span>
-                        <span class="badge bg-primary">
-                            @($"{participants?.Count ?? 0} / {session.MaxPeople?.ToString() ?? "?"}")
-                        </span>
-                    </div>
+<div class="card shadow-sm mb-4" style="max-width: 320px; border: 1px solid #198754;">
+    
+    <div class="card-header bg-success text-white py-2">
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-bold">
+                <i class="bi bi-people-fill me-2"></i>Online Users
+            </span>
+            <span class="badge bg-white text-success rounded-pill">
+                @(session?.Participants?.Count ?? 0) / @(session?.MaxPeople?.ToString() ?? "?")
+            </span>
+        </div>
+    </div>
 
-                    @if (participants is null)
-                    {
-                        <div class="text-muted"><em>Loading...</em></div>
-                    }
-                    else if (participants.Count == 0)
-                    {
-                        <div class="text-muted"><em>No one here yet.</em></div>
-                    }
-                    else
-                    {
-                        <ul class="list-group">
-                            @foreach (var name in participants)
-                            {
-                                <li class="list-group-item d-flex align-items-center">
-                                    <span>@name</span>
-                                    <span class="ms-auto online-dot"></span>
-                                </li>
-                            }
-                        </ul>
-                    }
-                </div>
+    <div class="card-body p-0" style="height: 250px; overflow-y: auto; background-color: #f8f9fa;">
+        @if (session?.Participants != null && session.Participants.Any())
+        {
+            <ul class="list-group list-group-flush">
+                @foreach (var participant in session.Participants)
+                {
+                    <li class="list-group-item d-flex align-items-center justify-content-between border-bottom-0 border-top-0" style="background-color: transparent;">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-white border border-success d-flex justify-content-center align-items-center me-2 text-success" 
+                                 style="width: 32px; height: 32px; font-weight:bold; font-size: 0.8rem;">
+                                @(string.IsNullOrEmpty(participant.DisplayName) ? "?" : participant.DisplayName.Substring(0, 1).ToUpper())
+                            </div>
+                            <span class="fw-normal">@participant.DisplayName</span>
+                        </div>
+                        <span style="height: 10px; width: 10px; background-color: #28a745; border-radius: 50%; box-shadow: 0 0 5px #28a745;" title="Online"></span>
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                <i class="bi bi-emoji-frown fs-4"></i>
+                <p class="mb-0 small mt-1">Room is empty.</p>
+            </div>
+        }
+    </div>
+    
+    <div class="card-footer bg-white text-center py-1">
+        <small class="text-success" style="font-size: 0.75rem;">Create Jam &bull; Live</small>
+    </div>
+</div>
 
                 <!-- ACTION BUTTONS -->
                 <div class="text-center mt-4">
