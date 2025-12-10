@@ -17,6 +17,10 @@ namespace JamCreator.Shared.Models.DTOs
         public int? DurationMinutes { get; set; }
         public bool AllowSkipVote { get; set; }
         public DateTime CreatedAtUtc { get; set; }
+        public DateTime? ExpiresAtUtc
+            => DurationMinutes.HasValue
+                ? CreatedAtUtc.AddMinutes(DurationMinutes.Value)
+                : null;
 
         public List<ParticipantDto> Participants { get; set; } = new();
         public List<AudioTrackDto> Tracks { get; set; } = new();

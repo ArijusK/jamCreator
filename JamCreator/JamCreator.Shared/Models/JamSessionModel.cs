@@ -27,6 +27,10 @@ namespace JamCreator.Shared.Models
         [Timestamp] public byte[]? RowVersion { get; set; }
         [System.Text.Json.Serialization.JsonIgnore]
         public string? TempPassword { get; set; }
+        public DateTime? ExpiresAtUtc
+            => DurationMinutes.HasValue
+                ? CreatedAtUtc.AddMinutes(DurationMinutes.Value)
+                : null;
     }
 }
 

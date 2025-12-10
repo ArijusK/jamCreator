@@ -40,6 +40,31 @@ namespace JamCreator.Controllers
             
         }
 
+        private static bool IsExpired(JamSessionModel s)
+        {
+            if (!s.DurationMinutes.HasValue) return false;
+
+            var expires = s.CreatedAtUtc.AddMinutes(s.DurationMinutes.Value);
+            return DateTime.UtcNow >= expires;
+        }
+
+        private async Task CleanupExpiredSessionsAsync()
+        {
+            var now = DateTime.UtcNow;
+
+            var expired = await _db.JamSessions
+                .Where(s => s.DurationMinutes != null &&
+                            s.CreatedAtUtc.AddMinutes(s.DurationMinutes.Value) <= now)
+                .ToListAsync();
+
+            if (expired.Count == 0)
+                return;
+
+            _db.JamSessions.RemoveRange(expired);
+            await _db.SaveChangesAsync();
+        }
+
+
         // POST: api/sessions/create-jam
         [HttpPost("create-jam")]
         public async Task<IActionResult> Create([FromBody] JamCreateModel model, CancellationToken ct)
@@ -69,9 +94,12 @@ namespace JamCreator.Controllers
         [HttpGet("get-sessions")]
         public async Task<ActionResult<IEnumerable<JamSessionDto>>> GetAll(CancellationToken ct)
         {
+            var now = DateTime.UtcNow;
             var list = await _db.JamSessions
                 .AsNoTracking()
                 .OrderByDescending(s => s.CreatedAtUtc)
+                .Where(s => s.DurationMinutes == null ||
+                    s.CreatedAtUtc.AddMinutes(s.DurationMinutes.Value) > now)
                 .Select(s => new JamSessionDto
                 {
                     Id              = s.Id,
@@ -97,8 +125,13 @@ namespace JamCreator.Controllers
         {
             if (string.IsNullOrWhiteSpace(id)) return BadRequest();
 
+            await CleanupExpiredSessionsAsync();
+            var now = DateTime.UtcNow;
+
             var dto = await _db.JamSessions
-                .Where(s => s.Id == id)
+                .Where(s => s.Id == id &&
+                            (s.DurationMinutes == null ||
+                            s.CreatedAtUtc.AddMinutes(s.DurationMinutes.Value) > now))
                 .Select(s => new JamSessionDto
                 {
                     Id              = s.Id,
@@ -146,6 +179,13 @@ namespace JamCreator.Controllers
             var session = await _sessions.GetByIdAsync(request.SessionId, ct);
             if (session is null)
                 return NotFound("Session not found.");
+
+            if (session.DurationMinutes.HasValue &&
+                session.CreatedAtUtc.AddMinutes(session.DurationMinutes.Value) <= DateTime.UtcNow)
+            {
+                await _sessions.DeleteByIdAsync(session.Id, ct);
+                return BadRequest("Session has expired.");
+            }
 
             if (session.IsPrivate && session.Password != request.Password)
                 return BadRequest("Incorrect password.");
