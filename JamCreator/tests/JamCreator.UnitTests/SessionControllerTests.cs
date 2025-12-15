@@ -377,4 +377,75 @@ public class SessionsControllerTests
         Assert.True(fileResult.EnableRangeProcessing);
         Assert.Equal(fullPath, fileResult.FileName);
     }
+
+    [Fact]
+    public async Task GetParticipants_EmptyId_ReturnsBadRequest()
+    {
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
+
+        var result = await controller.GetParticipants("", CancellationToken.None);
+
+        var bad = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Missing session id.", bad.Value);
+
+    }
+
+    [Fact]
+    public async Task GetParticipants_UnknownSession_ReturnsNotFound()
+    {
+        using var ctx = CreateContext();
+
+        var sessionsRepoMock = new Mock<IRepository<JamSessionModel, string>>();
+        sessionsRepoMock
+            .Setup(r => r.GetByIdAsync("missing", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((JamSessionModel?)null);
+
+        var participantsRepoMock = new Mock<IRepository<SessionParticipant, int>>();
+        var tracksRepoMock = new Mock<IRepository<AudioTrack, int>>();
+        var audioMoodMock = new Mock<IAudioMoodService>();
+
+        var envMock = new Mock<IWebHostEnvironment>();
+        var root = Directory.GetCurrentDirectory();
+        envMock.SetupGet(e => e.ContentRootPath).Returns(root);
+        envMock.SetupGet(e => e.WebRootPath).Returns(Path.Combine(root, "wwwroot"));
+
+        var controller = new SessionsController(
+            sessionsRepoMock.Object,
+            participantsRepoMock.Object,
+            tracksRepoMock.Object,
+            ctx,
+            envMock.Object,
+            audioMoodMock.Object);
+
+        var result = await controller.GetParticipants("missing", CancellationToken.None);
+
+        var nf = Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public void PlayCustomAudio_FileDoesNotExist_ReturnsNotFound()
+    {
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
+
+        var result = controller.PlayCustomAudio("nope.mp3");
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+   [Fact]
+    public async Task Leave_EmptySessionId_ReturnsBadRequest()
+    {
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
+
+        var result = await controller.Leave(new LeaveJamModel { SessionId = "" }, CancellationToken.None);
+
+        Assert.IsType<BadRequestResult>(result);
+    }
+
+
+
+
 }
