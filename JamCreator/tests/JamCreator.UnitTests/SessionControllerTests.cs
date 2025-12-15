@@ -250,6 +250,9 @@ public class SessionsControllerTests
 
         var sessionsRepoMock = new Mock<IRepository<JamSessionModel, string>>();
         sessionsRepoMock
+            .Setup(r => r.GetByIdAsync("session-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new JamSessionModel { Id = "session-1" });
+        sessionsRepoMock
             .Setup(r => r.DeleteByIdAsync("session-1", It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
