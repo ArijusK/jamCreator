@@ -8,6 +8,7 @@
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components
 @using System.Linq
+@using System.Timers
 @implements IAsyncDisposable
 
 @if (session is null)
@@ -352,6 +353,9 @@ else
     private int? selectedTrackIdForVote;
     private bool awaitAutoPlayAfterVote;
 
+    // ⬇️ nauji laukai dėl room trukmės
+    private System.Timers.Timer? expirationTimer;
+    private string? timeLeftDisplay;
 
     void ShowRoomInfo() => showInfo = true;
     void HideRoomInfo() => showInfo = false;
@@ -378,6 +382,9 @@ else
             participants = (await Http.GetFromJsonAsync<List<string>>(
                 $"api/sessions/{SessionId}/participants"
             )) ?? new List<string>();
+
+            // užkuriam timer'į pagal room duration
+            SetupExpirationTimer();
         }
         catch
         {
@@ -781,8 +788,80 @@ else
         }
     }
 
+    // ROOM DURATION LOGIC
+
+    private void SetupExpirationTimer()
+    {
+        // sustabdom ir išvalom seną timer'į, jei toks buvo
+        expirationTimer?.Stop();
+        expirationTimer?.Dispose();
+        expirationTimer = null;
+        timeLeftDisplay = null;
+
+        if (session is null || !session.DurationMinutes.HasValue || session.DurationMinutes <= 0)
+            return; // neribotas kambarys – nieko nedarom
+
+        var endUtc = session.CreatedAtUtc.AddMinutes(session.DurationMinutes.Value);
+        var remaining = endUtc - DateTime.UtcNow;
+
+        if (remaining <= TimeSpan.Zero)
+        {
+            // jau pasibaigęs – iškart išmetam
+            _ = HandleSessionExpired();
+            return;
+        }
+
+        UpdateTimeLeft(endUtc);
+
+        expirationTimer = new System.Timers.Timer(1000); // kas 1s
+        expirationTimer.AutoReset = true;
+        expirationTimer.Elapsed += async (_, __) =>
+        {
+            var now = DateTime.UtcNow;
+            if (now >= endUtc)
+            {
+                expirationTimer?.Stop();
+                expirationTimer?.Dispose();
+                expirationTimer = null;
+
+                await InvokeAsync(async () => await HandleSessionExpired());
+            }
+            else
+            {
+                await InvokeAsync(() =>
+                {
+                    UpdateTimeLeft(endUtc);
+                    StateHasChanged();
+                });
+            }
+        };
+        expirationTimer.Start();
+    }
+
+    private void UpdateTimeLeft(DateTime endUtc)
+    {
+        var remaining = endUtc - DateTime.UtcNow;
+        if (remaining < TimeSpan.Zero) remaining = TimeSpan.Zero;
+
+        if (remaining.TotalHours >= 1)
+            timeLeftDisplay = $"{(int)remaining.TotalHours:D2}:{remaining.Minutes:D2}:{remaining.Seconds:D2}";
+        else
+            timeLeftDisplay = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}";
+    }
+
+    private async Task HandleSessionExpired()
+    {
+        errorMessage = "Room duration has ended.";
+        await LeaveSession();   // automatiškai išmeta į /join-jam
+    }
+
     public async ValueTask DisposeAsync()
     {
+        // sutvarkom timer'į
+        expirationTimer?.Stop();
+        expirationTimer?.Dispose();
+        expirationTimer = null;
+
         refreshCts?.Cancel();
         refreshCts?.Dispose();
 

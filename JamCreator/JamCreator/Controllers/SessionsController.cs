@@ -91,33 +91,40 @@ namespace JamCreator.Controllers
         }
 
         // GET: api/sessions/get-sessions
-        [HttpGet("get-sessions")]
-        public async Task<ActionResult<IEnumerable<JamSessionDto>>> GetAll(CancellationToken ct)
-        {
-            var now = DateTime.UtcNow;
-            var list = await _db.JamSessions
-                .AsNoTracking()
-                .OrderByDescending(s => s.CreatedAtUtc)
-                .Where(s => s.DurationMinutes == null ||
-                    s.CreatedAtUtc.AddMinutes(s.DurationMinutes.Value) > now)
-                .Select(s => new JamSessionDto
-                {
-                    Id              = s.Id,
-                    RoomName        = s.RoomName,
-                    Genre           = s.Genre,
-                    Description     = s.Description,
-                    IsPrivate       = s.IsPrivate,
-                    Mood            = s.Mood,
-                    MaxPeople       = s.MaxPeople,
-                    DurationMinutes = s.DurationMinutes,
-                    AllowSkipVote   = s.AllowSkipVote,
-                    CreatedAtUtc    = s.CreatedAtUtc,
-                    Participants    = s.Participants.Select(p => new ParticipantDto { Id = p.Id }).ToList()
-                })
-                .ToListAsync(ct);
+[HttpGet("get-sessions")]
+public async Task<ActionResult<IEnumerable<JamSessionDto>>> GetAll(CancellationToken ct)
+{
+    var nowUtc = DateTime.UtcNow;
 
-            return Ok(list);
-        }
+    var list = await _db.JamSessions
+        .AsNoTracking()
+        
+        .Where(s =>
+            !s.DurationMinutes.HasValue ||
+            s.DurationMinutes <= 0 ||
+            s.CreatedAtUtc.AddMinutes(s.DurationMinutes.Value) > nowUtc
+        )
+        .OrderByDescending(s => s.CreatedAtUtc)
+        .Select(s => new JamSessionDto
+        {
+            Id              = s.Id,
+            RoomName        = s.RoomName,
+            Genre           = s.Genre,
+            Description     = s.Description,
+            IsPrivate       = s.IsPrivate,
+            Mood            = s.Mood,
+            MaxPeople       = s.MaxPeople,
+            DurationMinutes = s.DurationMinutes,
+            AllowSkipVote   = s.AllowSkipVote,
+            CreatedAtUtc    = s.CreatedAtUtc
+        })
+        .ToListAsync(ct);
+
+    return Ok(list);
+}
+
+
+
 
         // GET: api/sessions/get-session-id/{id}
         [HttpGet("get-session-id/{id}")]
@@ -169,82 +176,86 @@ namespace JamCreator.Controllers
             return dto is null ? NotFound() : Ok(dto);
         }
 
+
         // POST: api/sessions/join-jam
-        [HttpPost("join-jam")]
-        public async Task<IActionResult> Join([FromBody] JoinModel request, CancellationToken ct)
+[HttpPost("join-jam")]
+public async Task<IActionResult> Join([FromBody] JoinModel request, CancellationToken ct)
+{
+    if (request is null || string.IsNullOrWhiteSpace(request.SessionId))
+        return BadRequest("Invalid join request.");
+
+    var session = await _sessions.GetByIdAsync(request.SessionId, ct);
+    if (session is null)
+        return NotFound("Session not found.");
+
+    if (session.IsPrivate && session.Password != request.Password)
+        return BadRequest("Incorrect password.");
+
+    var nowUtc = DateTime.UtcNow;
+    if (session.DurationMinutes.HasValue &&
+        session.DurationMinutes > 0 &&
+        session.CreatedAtUtc.AddMinutes(session.DurationMinutes.Value) <= nowUtc)
+    {
+        return BadRequest("Session has expired.");
+    }
+
+    var name = string.IsNullOrWhiteSpace(request.DisplayName)
+        ? "Guest"
+        : request.DisplayName.Trim();
+
+    var participants = await _participants.ListAsync(
+        p => p.JamSessionId == session.Id,
+        ct
+    );
+
+    var maxPeople = session.MaxPeople ?? int.MaxValue;
+
+    SessionParticipant? sameClient = null;
+    if (!string.IsNullOrWhiteSpace(request.ClientToken))
+    {
+        sameClient = participants
+            .FirstOrDefault(p => p.ClientToken == request.ClientToken);
+    }
+
+    if (sameClient is not null)
+    {
+        if (!string.Equals(sameClient.DisplayName, name, StringComparison.Ordinal))
         {
-            if (request is null || string.IsNullOrWhiteSpace(request.SessionId))
-                return BadRequest("Invalid join request.");
-
-            var session = await _sessions.GetByIdAsync(request.SessionId, ct);
-            if (session is null)
-                return NotFound("Session not found.");
-
-            if (session.DurationMinutes.HasValue &&
-                session.CreatedAtUtc.AddMinutes(session.DurationMinutes.Value) <= DateTime.UtcNow)
-            {
-                await _sessions.DeleteByIdAsync(session.Id, ct);
-                return BadRequest("Session has expired.");
-            }
-
-            if (session.IsPrivate && session.Password != request.Password)
-                return BadRequest("Incorrect password.");
-
-            var name = string.IsNullOrWhiteSpace(request.DisplayName)
-                ? "Guest"
-                : request.DisplayName.Trim();
-
-            var participants = await _participants.ListAsync(
-                p => p.JamSessionId == session.Id,
-                ct
-            );
-
-            var maxPeople = session.MaxPeople ?? int.MaxValue;
-
-            SessionParticipant? sameClient = null;
-            if (!string.IsNullOrWhiteSpace(request.ClientToken))
-            {
-                sameClient = participants
-                    .FirstOrDefault(p => p.ClientToken == request.ClientToken);
-            }
-
-            if (sameClient is not null)
-            {
-                if (!string.Equals(sameClient.DisplayName, name, StringComparison.Ordinal))
-                {
-                    sameClient.DisplayName = name;
-                    await _participants.UpdateAsync(sameClient, ct);
-                }
-
-                return Ok(new
-                {
-                    session.Id,
-                    session.RoomName,
-                    JoinedAs = name,
-                    AlreadyJoined = true
-                });
-            }
-
-            if (participants.Count >= maxPeople)
-                return BadRequest("Session is full.");
-
-            var newParticipant = new SessionParticipant
-            {
-                JamSessionId = session.Id,
-                DisplayName  = name,
-                ClientToken  = request.ClientToken
-            };
-
-            await _participants.AddAsync(newParticipant, ct);
-
-            return Ok(new
-            {
-                session.Id,
-                session.RoomName,
-                JoinedAs = name,
-                AlreadyJoined = false
-            });
+            sameClient.DisplayName = name;
+            await _participants.UpdateAsync(sameClient, ct);
         }
+
+        return Ok(new
+        {
+            session.Id,
+            session.RoomName,
+            JoinedAs     = name,
+            AlreadyJoined = true
+        });
+    }
+
+    if (participants.Count >= maxPeople)
+        return BadRequest("Session is full.");
+
+    var newParticipant = new SessionParticipant
+    {
+        JamSessionId = session.Id,
+        DisplayName  = name,
+        ClientToken  = request.ClientToken
+    };
+
+    await _participants.AddAsync(newParticipant, ct);
+
+    return Ok(new
+    {
+        session.Id,
+        session.RoomName,
+        JoinedAs      = name,
+        AlreadyJoined = false
+    });
+}
+
+
 
 
         [HttpGet("play-audio/{mood}/{fileName}")]
