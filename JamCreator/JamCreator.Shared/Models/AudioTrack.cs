@@ -19,5 +19,6 @@ namespace JamCreator.Shared.Models
         public JamMood Mood { get; set; }
         public bool IsCustom { get; set; }
         public DateTime AddedAtUtc { get; set; } = DateTime.UtcNow;
+        public string? UploadedByClientToken { get; set; }
     }
 }

@@ -574,49 +574,65 @@ else
     }
 
     private async Task UploadTrack()
+{
+    uploadError = null;
+
+    if (selectedFile is null)
     {
-        uploadError = null;
-        if (selectedFile is null)
+        uploadError = "No file selected!";
+        return;
+    }
+
+    try
+    {
+        isUploading = true;
+
+        var clientToken = await JS.InvokeAsync<string>("localStorage.getItem", "jamClientToken");
+        if (string.IsNullOrWhiteSpace(clientToken))
         {
-            uploadError = "No file selected!";
-            return;
+            clientToken = Guid.NewGuid().ToString();
+            await JS.InvokeVoidAsync("localStorage.setItem", "jamClientToken", clientToken);
         }
 
-        try
+        using var content = new MultipartFormDataContent();
+        var stream = selectedFile.OpenReadStream(50 * 1024 * 1024);
+        var fileContent = new StreamContent(stream);
+
+        fileContent.Headers.ContentType =
+            new System.Net.Http.Headers.MediaTypeHeaderValue(selectedFile.ContentType);
+
+        content.Add(fileContent, "file", selectedFile.Name);
+
+        // 🔥 Pridedame clientToken į API užklausą
+        var resp = await Http.PostAsync(
+            $"/api/sessions/{SessionId}/upload-track?clientToken={Uri.EscapeDataString(clientToken)}",
+            content
+        );
+
+        if (resp.IsSuccessStatusCode)
         {
-            isUploading = true;
+            var updated = await Http.GetFromJsonAsync<JamSessionDto>(
+                $"/api/sessions/get-session-id/{SessionId}"
+            );
 
-            using var content = new MultipartFormDataContent();
-            var stream = selectedFile.OpenReadStream(50 * 1024 * 1024);
-            var fileContent = new StreamContent(stream);
-
-            fileContent.Headers.ContentType =
-                new System.Net.Http.Headers.MediaTypeHeaderValue(selectedFile.ContentType);
-
-            content.Add(fileContent, "file", selectedFile.Name);
-
-            var resp = await Http.PostAsync($"/api/sessions/{SessionId}/upload-track", content);
-
-            if (resp.IsSuccessStatusCode)
-            {
-                var updated = await Http.GetFromJsonAsync<JamSessionDto>($"/api/sessions/get-session-id/{SessionId}");
-                session = updated;
-                tracks = updated?.Tracks?.ToList() ?? new();
-            }
-            else
-            {
-                uploadError = "Upload failed.";
-            }
+            session = updated;
+            tracks = updated?.Tracks?.ToList() ?? new();
         }
-        catch (Exception ex)
+        else
         {
-            uploadError = ex.Message;
-        }
-        finally
-        {
-            isUploading = false;
+            uploadError = "Upload failed.";
         }
     }
+    catch (Exception ex)
+    {
+        uploadError = ex.Message;
+    }
+    finally
+    {
+        isUploading = false;
+    }
+}
+
 
     private async Task DeleteTrack(AudioTrackDto track)
     {
