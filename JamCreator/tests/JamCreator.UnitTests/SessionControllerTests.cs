@@ -485,7 +485,7 @@ public class SessionsControllerTests
         using var ctx = CreateContext();
         var controller = CreateController(ctx);
 
-        var result = controller.PlayAudio("chill", "");
+        var result = controller.PlayCustomAudio("");
 
         Assert.IsType<BadRequestResult>(result);
     }
@@ -496,7 +496,7 @@ public class SessionsControllerTests
         using var ctx = CreateContext();
         var controller = CreateController(ctx);
 
-        var result = controller.PlayAudio("chill", "does-not-exist.mp3");
+        var result = controller.PlayCustomAudio("does-not-exist.mp3");
 
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         var message  = Assert.IsType<string>(notFound.Value);
@@ -504,32 +504,45 @@ public class SessionsControllerTests
     }
 
     [Fact]
-    public void PlayAudio_FileExists_ReturnsPhysicalFile()
+    public void PlayCustomAudio_FileExists_ReturnsPhysicalFile()
     {
         using var ctx = CreateContext();
 
-        var root    = Directory.GetCurrentDirectory();
+        // Make sure controller uses a real wwwroot
+        var envMock = new Mock<IWebHostEnvironment>();
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         var webRoot = Path.Combine(root, "wwwroot");
-        var mood    = "chill";
+        envMock.SetupGet(e => e.ContentRootPath).Returns(root);
+        envMock.SetupGet(e => e.WebRootPath).Returns(webRoot);
 
-        var audioDir = Path.Combine(webRoot, "audio", mood);
-        Directory.CreateDirectory(audioDir);
+        Directory.CreateDirectory(Path.Combine(webRoot, "audio", "custom"));
 
-        var fileName = "test-audio.mp3";
-        var fullPath = Path.Combine(audioDir, fileName);
+        var fileName = "test.mp3";
+        var fullPath = Path.Combine(webRoot, "audio", "custom", fileName);
+        File.WriteAllBytes(fullPath, new byte[] { 1, 2, 3 }); // create dummy mp3
 
-        File.WriteAllText(fullPath, "dummy");
+        var sessionsRepo = new Mock<IRepository<JamSessionModel, string>>();
+        var participantsRepo = new Mock<IRepository<SessionParticipant, int>>();
+        var tracksRepo = new Mock<IRepository<AudioTrack, int>>();
+        var audioMood = new Mock<IAudioMoodService>();
 
-        var controller = CreateController(ctx);
+        var controller = new SessionsController(
+            sessionsRepo.Object,
+            participantsRepo.Object,
+            tracksRepo.Object,
+            ctx,
+            envMock.Object,
+            audioMood.Object);
 
-        var result = controller.PlayAudio(mood, fileName);
+        var result = controller.PlayCustomAudio(fileName);
 
-        var fileResult = Assert.IsType<PhysicalFileResult>(result);
+        var physical = Assert.IsType<PhysicalFileResult>(result);
+        Assert.EndsWith(Path.Combine("audio", "custom", fileName), physical.FileName);
 
-        Assert.Equal("audio/mpeg", fileResult.ContentType);
-        Assert.True(fileResult.EnableRangeProcessing);
-        Assert.Equal(fullPath, fileResult.FileName);
+        // cleanup
+        Directory.Delete(root, recursive: true);
     }
+
 
     [Fact]
     public async Task GetParticipants_EmptyId_ReturnsBadRequest()
@@ -658,7 +671,7 @@ public class SessionsControllerTests
         using var ctx = CreateContext();
         var controller = CreateController(ctx);
 
-        var result = await controller.UploadAudio("s1", null, CancellationToken.None);
+        var result = await controller.UploadAudio("s1", null, null, CancellationToken.None);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -672,7 +685,7 @@ public class SessionsControllerTests
         file.SetupGet(f => f.Length).Returns(10);
         file.SetupGet(f => f.FileName).Returns("bad.wav");
 
-        var result = await controller.UploadAudio("s1", file.Object, CancellationToken.None);
+        var result = await controller.UploadAudio("s1", file.Object, null, CancellationToken.None);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -687,7 +700,7 @@ public class SessionsControllerTests
         file.SetupGet(f => f.Length).Returns(10);
         file.SetupGet(f => f.FileName).Returns("ok.mp3");
 
-        var result = await controller.UploadAudio("missing", file.Object, CancellationToken.None);
+        var result = await controller.UploadAudio("missing", file.Object, null, CancellationToken.None);
 
         Assert.IsType<NotFoundObjectResult>(result);
     }

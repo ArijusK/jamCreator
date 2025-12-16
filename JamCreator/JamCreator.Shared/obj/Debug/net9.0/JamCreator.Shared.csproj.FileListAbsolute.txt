@@ -72,6 +72,7 @@ C:\Users\justi\Documents\jamCreator-1\jamCreator\JamCreator.Shared\obj\Debug\net
 C:\Users\justi\Documents\jamCreator-1\jamCreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.pdb
 C:\Users\justi\Documents\jamCreator-1\jamCreator\JamCreator.Shared\obj\Debug\net9.0\ref\JamCreator.Shared.dll
 =======
+>>>>>>> tests
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\bin\Debug\net9.0\JamCreator.Shared.deps.json
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\bin\Debug\net9.0\JamCreator.Shared.dll
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\bin\Debug\net9.0\JamCreator.Shared.pdb
@@ -84,4 +85,3 @@ C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineeri
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\obj\Debug\net9.0\refint\JamCreator.Shared.dll
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\obj\Debug\net9.0\JamCreator.Shared.pdb
 C:\Users\User\Documents\VilniausUniversitetas\ProgramuSistemos\SoftwareEngineering\Projektas\jamCreator\JamCreator\JamCreator.Shared\obj\Debug\net9.0\ref\JamCreator.Shared.dll
->>>>>>> tests
