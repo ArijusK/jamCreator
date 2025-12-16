@@ -1,6 +1,20 @@
 {
   "format": 1,
   "restore": {
+    "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {}
+  },
+  "projects": {
+    "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
+        "projectName": "JamCreator.Shared",
+        "projectPath": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
+        "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\User\\AppData\\Roaming\\NuGet\\NuGet.Config"
     "C:\\Users\\Administrator\\Documents\\3kursas\\PSI12025\\jamCreator\\jamcreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {}
   },
   "projects": {
@@ -66,6 +80,7 @@
               "privateAssets": "all"
             }
           },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
           "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
         }
       }
