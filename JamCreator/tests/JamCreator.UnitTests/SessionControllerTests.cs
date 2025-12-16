@@ -4,6 +4,7 @@ using JamCreator.Services;
 using JamCreator.Shared.Interfaces;
 using JamCreator.Shared.Models;
 using JamCreator.Shared.Models.DTOs;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -31,8 +32,6 @@ public class SessionsControllerTests
 
         var envMock = new Mock<IWebHostEnvironment>();
         var root    = Directory.GetCurrentDirectory();
-
-        // naudosim tą patį root kaip ir testuose
         envMock.SetupGet(e => e.ContentRootPath).Returns(root);
         envMock.SetupGet(e => e.WebRootPath).Returns(Path.Combine(root, "wwwroot"));
 
@@ -252,6 +251,9 @@ public class SessionsControllerTests
 
         var sessionsRepoMock = new Mock<IRepository<JamSessionModel, string>>();
         sessionsRepoMock
+            .Setup(r => r.GetByIdAsync("session-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new JamSessionModel { Id = "session-1" });
+        sessionsRepoMock
             .Setup(r => r.DeleteByIdAsync("session-1", It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
@@ -326,12 +328,164 @@ public class SessionsControllerTests
     }
 
     [Fact]
+    public async Task Join_ExpiredSession_ReturnsBadRequest()
+    {
+        using var ctx = CreateContext();
+
+        var sessionsRepo = new Mock<IRepository<JamSessionModel, string>>();
+        var participantsRepo = new Mock<IRepository<SessionParticipant, int>>();
+        var tracksRepo = new Mock<IRepository<AudioTrack, int>>();
+        var audioMood = new Mock<IAudioMoodService>();
+
+        var env = new Mock<IWebHostEnvironment>();
+        env.SetupGet(e => e.ContentRootPath).Returns(Directory.GetCurrentDirectory());
+        env.SetupGet(e => e.WebRootPath).Returns(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"));
+
+        var expired = new JamSessionModel
+        {
+            Id = "s1",
+            RoomName = "Room",
+            DurationMinutes = 1,
+            CreatedAtUtc = DateTime.UtcNow.AddMinutes(-10)
+        };
+
+        sessionsRepo
+            .Setup(r => r.GetByIdAsync("s1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expired);
+
+        sessionsRepo
+            .Setup(r => r.DeleteByIdAsync("s1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var controller = new SessionsController(
+            sessionsRepo.Object,
+            participantsRepo.Object,
+            tracksRepo.Object,
+            ctx,
+            env.Object,
+            audioMood.Object);
+
+        var result = await controller.Join(
+            new JoinModel { SessionId = "s1", DisplayName = "X" },
+            CancellationToken.None);
+
+        var bad = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Session has expired.", bad.Value);
+
+        sessionsRepo.Verify(
+            r => r.DeleteByIdAsync("s1", It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Join_SameClientToken_ReturnsAlreadyJoinedResponse()
+    {
+        using var ctx = CreateContext();
+
+        var sessionsRepo = new Mock<IRepository<JamSessionModel, string>>();
+        var participantsRepo = new Mock<IRepository<SessionParticipant, int>>();
+        var tracksRepo = new Mock<IRepository<AudioTrack, int>>();
+        var audioMood = new Mock<IAudioMoodService>();
+
+        var env = new Mock<IWebHostEnvironment>();
+        env.SetupGet(e => e.ContentRootPath).Returns(Directory.GetCurrentDirectory());
+        env.SetupGet(e => e.WebRootPath).Returns(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"));
+
+        var session = new JamSessionModel { Id = "s1", RoomName = "Room" };
+        sessionsRepo.Setup(r => r.GetByIdAsync("s1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+
+        participantsRepo.Setup(r => r.ListAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<SessionParticipant, bool>>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<SessionParticipant>
+            {
+                new SessionParticipant
+                {
+                    JamSessionId = "s1",
+                    DisplayName = "Old",
+                    ClientToken = "token-1"
+                }
+            });
+
+        participantsRepo.Setup(r => r.ListAsync(
+            It.IsAny<System.Linq.Expressions.Expression<Func<SessionParticipant, bool>>>(),
+            It.IsAny<CancellationToken>())) .Returns(Task.FromResult(new List<SessionParticipant>
+                    {
+                        new SessionParticipant
+                        {
+                            JamSessionId = "s1",
+                            DisplayName = "Old",
+                            ClientToken = "token-1"
+                        }
+                    }));
+
+
+
+        var controller = new SessionsController(
+            sessionsRepo.Object, participantsRepo.Object, tracksRepo.Object, ctx, env.Object, audioMood.Object);
+
+        var result = await controller.Join(
+            new JoinModel
+            {
+                SessionId = "s1",
+                DisplayName = "New",
+                ClientToken = "token-1"
+            },
+            CancellationToken.None);
+
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Join_SessionIsFull_ReturnsBadRequest()
+    {
+        using var ctx = CreateContext();
+
+        var sessionsRepo = new Mock<IRepository<JamSessionModel, string>>();
+        var participantsRepo = new Mock<IRepository<SessionParticipant, int>>();
+        var tracksRepo = new Mock<IRepository<AudioTrack, int>>();
+        var audioMood = new Mock<IAudioMoodService>();
+
+        var env = new Mock<IWebHostEnvironment>();
+        env.SetupGet(e => e.ContentRootPath).Returns(Directory.GetCurrentDirectory());
+        env.SetupGet(e => e.WebRootPath).Returns(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"));
+
+        var session = new JamSessionModel
+        {
+            Id = "s1",
+            RoomName = "Room",
+            MaxPeople = 1
+        };
+
+        sessionsRepo.Setup(r => r.GetByIdAsync("s1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+
+        participantsRepo.Setup(r => r.ListAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<SessionParticipant, bool>>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<SessionParticipant>
+            {
+                new SessionParticipant { JamSessionId = "s1", DisplayName = "A" }
+            });
+
+        var controller = new SessionsController(
+            sessionsRepo.Object, participantsRepo.Object, tracksRepo.Object, ctx, env.Object, audioMood.Object);
+
+        var result = await controller.Join(
+            new JoinModel { SessionId = "s1", DisplayName = "B" },
+            CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
     public void PlayAudio_FileNameIsEmpty_ReturnsBadRequest()
     {
         using var ctx = CreateContext();
         var controller = CreateController(ctx);
 
-        var result = controller.PlayAudio("chill", "");
+        var result = controller.PlayCustomAudio("");
 
         Assert.IsType<BadRequestResult>(result);
     }
@@ -342,7 +496,7 @@ public class SessionsControllerTests
         using var ctx = CreateContext();
         var controller = CreateController(ctx);
 
-        var result = controller.PlayAudio("chill", "does-not-exist.mp3");
+        var result = controller.PlayCustomAudio("does-not-exist.mp3");
 
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         var message  = Assert.IsType<string>(notFound.Value);
@@ -350,30 +504,225 @@ public class SessionsControllerTests
     }
 
     [Fact]
-    public void PlayAudio_FileExists_ReturnsPhysicalFile()
+    public void PlayCustomAudio_FileExists_ReturnsPhysicalFile()
     {
         using var ctx = CreateContext();
 
-        var root    = Directory.GetCurrentDirectory();
+        // Make sure controller uses a real wwwroot
+        var envMock = new Mock<IWebHostEnvironment>();
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         var webRoot = Path.Combine(root, "wwwroot");
-        var mood    = "chill";
+        envMock.SetupGet(e => e.ContentRootPath).Returns(root);
+        envMock.SetupGet(e => e.WebRootPath).Returns(webRoot);
 
-        var audioDir = Path.Combine(webRoot, "audio", mood);
-        Directory.CreateDirectory(audioDir);
+        Directory.CreateDirectory(Path.Combine(webRoot, "audio", "custom"));
 
-        var fileName = "test-audio.mp3";
-        var fullPath = Path.Combine(audioDir, fileName);
+        var fileName = "test.mp3";
+        var fullPath = Path.Combine(webRoot, "audio", "custom", fileName);
+        File.WriteAllBytes(fullPath, new byte[] { 1, 2, 3 }); // create dummy mp3
 
-        File.WriteAllText(fullPath, "dummy");
+        var sessionsRepo = new Mock<IRepository<JamSessionModel, string>>();
+        var participantsRepo = new Mock<IRepository<SessionParticipant, int>>();
+        var tracksRepo = new Mock<IRepository<AudioTrack, int>>();
+        var audioMood = new Mock<IAudioMoodService>();
 
+        var controller = new SessionsController(
+            sessionsRepo.Object,
+            participantsRepo.Object,
+            tracksRepo.Object,
+            ctx,
+            envMock.Object,
+            audioMood.Object);
+
+        var result = controller.PlayCustomAudio(fileName);
+
+        var physical = Assert.IsType<PhysicalFileResult>(result);
+        Assert.EndsWith(Path.Combine("audio", "custom", fileName), physical.FileName);
+
+        // cleanup
+        Directory.Delete(root, recursive: true);
+    }
+
+
+    [Fact]
+    public async Task GetParticipants_EmptyId_ReturnsBadRequest()
+    {
+        using var ctx = CreateContext();
         var controller = CreateController(ctx);
 
-        var result = controller.PlayAudio(mood, fileName);
+        var result = await controller.GetParticipants("", CancellationToken.None);
 
-        var fileResult = Assert.IsType<PhysicalFileResult>(result);
+        var bad = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Missing session id.", bad.Value);
 
-        Assert.Equal("audio/mpeg", fileResult.ContentType);
-        Assert.True(fileResult.EnableRangeProcessing);
-        Assert.Equal(fullPath, fileResult.FileName);
     }
+
+    [Fact]
+    public async Task GetParticipants_UnknownSession_ReturnsNotFound()
+    {
+        using var ctx = CreateContext();
+
+        var sessionsRepoMock = new Mock<IRepository<JamSessionModel, string>>();
+        sessionsRepoMock
+            .Setup(r => r.GetByIdAsync("missing", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((JamSessionModel?)null);
+
+        var participantsRepoMock = new Mock<IRepository<SessionParticipant, int>>();
+        var tracksRepoMock = new Mock<IRepository<AudioTrack, int>>();
+        var audioMoodMock = new Mock<IAudioMoodService>();
+
+        var envMock = new Mock<IWebHostEnvironment>();
+        var root = Directory.GetCurrentDirectory();
+        envMock.SetupGet(e => e.ContentRootPath).Returns(root);
+        envMock.SetupGet(e => e.WebRootPath).Returns(Path.Combine(root, "wwwroot"));
+
+        var controller = new SessionsController(
+            sessionsRepoMock.Object,
+            participantsRepoMock.Object,
+            tracksRepoMock.Object,
+            ctx,
+            envMock.Object,
+            audioMoodMock.Object);
+
+        var result = await controller.GetParticipants("missing", CancellationToken.None);
+
+        var nf = Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public void PlayCustomAudio_FileDoesNotExist_ReturnsNotFound()
+    {
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
+
+        var result = controller.PlayCustomAudio("nope.mp3");
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+   [Fact]
+    public async Task Leave_EmptySessionId_ReturnsBadRequest()
+    {
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
+
+        var result = await controller.Leave(new LeaveJamModel { SessionId = "" }, CancellationToken.None);
+
+        Assert.IsType<BadRequestResult>(result);
+    }
+
+    [Fact]
+    public async Task Leave_RemovesParticipant_ReturnsNoContent()
+    {
+        using var ctx = CreateContext();
+
+        var sessionsRepoMock = new Mock<IRepository<JamSessionModel, string>>();
+        var participantsRepoMock = new Mock<IRepository<SessionParticipant, int>>();
+        var tracksRepoMock = new Mock<IRepository<AudioTrack, int>>();
+        var audioMoodMock = new Mock<IAudioMoodService>();
+
+        var envMock = new Mock<IWebHostEnvironment>();
+        var root = Directory.GetCurrentDirectory();
+        envMock.SetupGet(e => e.ContentRootPath).Returns(root);
+        envMock.SetupGet(e => e.WebRootPath).Returns(Path.Combine(root, "wwwroot"));
+
+        var matching = new List<SessionParticipant>
+        {
+            new SessionParticipant
+            {
+                Id = 1,
+                JamSessionId = "s1",
+                DisplayName = "user1"
+            }
+        };
+
+        participantsRepoMock
+            .Setup(r => r.ListAsync(It.IsAny<System.Linq.Expressions.Expression<Func<SessionParticipant, bool>>>(),
+                                    It.IsAny<CancellationToken>()))
+            .ReturnsAsync(matching);
+
+        participantsRepoMock
+            .Setup(r => r.DeleteAsync(It.IsAny<SessionParticipant>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var controller = new SessionsController(
+            sessionsRepoMock.Object,
+            participantsRepoMock.Object,
+            tracksRepoMock.Object,
+            ctx,
+            envMock.Object,
+            audioMoodMock.Object);
+
+        var result = await controller.Leave(
+            new LeaveJamModel { SessionId = "s1", DisplayName = "user1" },
+            CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(result);
+
+        participantsRepoMock.Verify(r => r.DeleteAsync(It.IsAny<SessionParticipant>(), It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce);
+    }
+
+
+
+    [Fact]
+    public async Task UploadAudio_NullFile_ReturnsBadRequest()
+    {
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
+
+        var result = await controller.UploadAudio("s1", null, null, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+    [Fact]
+    public async Task UploadAudio_InvalidFileExtension_ReturnsBadRequest()
+    {
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
+
+        var file = new Mock<IFormFile>();
+        file.SetupGet(f => f.Length).Returns(10);
+        file.SetupGet(f => f.FileName).Returns("bad.wav");
+
+        var result = await controller.UploadAudio("s1", file.Object, null, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UploadAudio_SessionNotFound_ReturnsNotFound()
+    {
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
+
+        var file = new Mock<IFormFile>();
+        file.SetupGet(f => f.Length).Returns(10);
+        file.SetupGet(f => f.FileName).Returns("ok.mp3");
+
+        var result = await controller.UploadAudio("missing", file.Object, null, CancellationToken.None);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task DeleteTrack_TrackNotFound_ReturnsNotFound()
+    {
+        using var ctx = CreateContext();
+        var controller = CreateController(ctx);
+
+        var result = await controller.DeleteTrack(999, CancellationToken.None);
+
+        var nf = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.Equal("Track not found.", nf.Value);
+
+    }
+
+    
+
+
+
+
+
+
 }

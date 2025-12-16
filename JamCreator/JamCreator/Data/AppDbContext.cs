@@ -5,13 +5,8 @@ using System.Linq.Expressions;
 
 namespace JamCreator.Data
 {
-    /// <summary>
-    /// Entity Framework Core database context for JamCreator.
-    /// Handles all persistence for sessions, participants, and audio tracks.
-    /// </summary>
     public class AppDbContext : DbContext
     {
-        // === DbSets ===
         public DbSet<JamSessionModel> JamSessions => Set<JamSessionModel>();
         public DbSet<SessionParticipant> Participants => Set<SessionParticipant>();
         public DbSet<AudioTrack> Tracks => Set<AudioTrack>();
@@ -24,7 +19,6 @@ namespace JamCreator.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // === JamSessionModel ===
             modelBuilder.Entity<JamSessionModel>(b =>
             {
                 b.HasKey(s => s.Id);
@@ -40,14 +34,11 @@ namespace JamCreator.Data
                 b.Property(s => s.CreatedAtUtc)
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                // Concurrency token
                 b.Property(s => s.RowVersion)
                     .IsRowVersion();
 
-                // Indexes
                 b.HasIndex(s => s.RoomName);
 
-                // Relationships
                 b.HasMany(s => s.Participants)
                     .WithOne(p => p.JamSession)
                     .HasForeignKey(p => p.JamSessionId)
@@ -59,7 +50,6 @@ namespace JamCreator.Data
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // === SessionParticipant ===
             modelBuilder.Entity<SessionParticipant>(b =>
             {
                 b.HasKey(p => p.Id);
@@ -71,11 +61,9 @@ namespace JamCreator.Data
                 b.Property(p => p.JoinedAtUtc)
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                // Index for faster lookups by session and name
                 b.HasIndex(p => new { p.JamSessionId, p.DisplayName });
             });
 
-            // === AudioTrack ===
             modelBuilder.Entity<AudioTrack>(b =>
             {
                 b.HasKey(t => t.Id);
@@ -88,7 +76,6 @@ namespace JamCreator.Data
                 b.Property(t => t.AddedAtUtc)
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                // optional index by filename per session
                 b.HasIndex(t => new { t.JamSessionId, t.FileName });
             });
             modelBuilder.Entity<ChatMessage>()

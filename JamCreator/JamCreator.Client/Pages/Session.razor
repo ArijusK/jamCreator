@@ -4,6 +4,11 @@
 @inject IJSRuntime JS
 @using JamCreator.Shared.Models.DTOs
 @using JamCreator.Shared.Models
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components
+@using System.Linq
+@implements IAsyncDisposable
 
 @if (session is null)
 {
@@ -46,11 +51,88 @@ else
             </div>
         }
 
+        <h5>Upload Custom Track, Only .mp3 files</h5>
+
+        <InputFile OnChange="OnFileSelected" accept=".mp3" />
+
+        @if (selectedFileName is not null)
+        {
+            <p><b>Selected:</b> @selectedFileName</p>
+        }
+
+        <button class="btn btn-primary" @onclick="UploadTrack" disabled="@(!isFileSelected)"> 
+            @(isUploading ? "Uploading..." : "Upload Track")
+        </button>
+
+        <p style="color:red">@uploadError</p>
+
+
         <!-- DVIEJŲ KOLONŲ LAYOUTAS -->
         <div class="session-layout">
             
-            <!-- KAIRĖ: playlist + participants + mygtukai -->
+            <!-- KAIRĖ: queue + playlist + participants + mygtukai -->
             <div class="session-left">
+
+                <!-- QUEUE (Now playing + Up next pagal balsus) -->
+                <div class="d-flex align-items-center mt-4 mb-2">
+                    <h5 class="mb-0 me-3">Queue</h5>
+                    <button class="btn btn-sm btn-outline-primary" @onclick="OpenVoteModal">
+                        Vote for next song
+                    </button>
+                </div>
+
+                <div class="card shadow-sm p-3 mb-3" style="max-width: 420px;">
+                    <div class="mb-2">
+                        <strong>Now playing:</strong><br />
+                        @if (currentTrack is not null)
+                        {
+                            <span>
+                                @(string.IsNullOrWhiteSpace(currentTrack.Title)
+                                    ? currentTrack.FileName
+                                    : currentTrack.Title)
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Nothing is playing.</span>
+                        }
+                    </div>
+
+                    <div>
+                        <strong>Up next (by votes):</strong><br />
+                        @{
+                            var votedTracks = tracks
+                                .Where(t => voteCounts.ContainsKey(t.Id) && voteCounts[t.Id] > 0)
+                                .OrderByDescending(t => voteCounts[t.Id])
+                                .ThenBy(t => string.IsNullOrWhiteSpace(t.Title) ? t.FileName : t.Title)
+                                .ToList();
+                        }
+                        @if (votedTracks.Any())
+                        {
+                            <ol class="mb-0 ps-3">
+                                @foreach (var t in votedTracks)
+                                {
+                                    var votes = voteCounts[t.Id];
+                                    var isWinner = winningTrackId.HasValue && winningTrackId.Value == t.Id;
+                                    <li>
+                                        <span class="@(isWinner ? "fw-bold" : "")">
+                                            @(string.IsNullOrWhiteSpace(t.Title) ? t.FileName : t.Title)
+                                        </span>
+                                        <span class="text-muted"> (@votes vote@(votes == 1 ? "" : "s"))</span>
+                                        @if (isWinner)
+                                        {
+                                            <span class="badge bg-success ms-1">top</span>
+                                        }
+                                    </li>
+                                }
+                            </ol>
+                        }
+                        else
+                        {
+                            <span class="text-muted">No votes yet.</span>
+                        }
+                    </div>
+                </div>
 
                 <!-- PLAYLIST -->
                 <h5 class="mt-4 mb-2">Playlist</h5>
@@ -61,11 +143,25 @@ else
 
                     @foreach (var t in tracks)
                     {
-                        <div class="card-body">
-                            <p class="fw-bold mb-2">@t.Title</p>
-                            <audio class="jam-audio" controls style="width:100%;">
-                                <source src="@BuildTrackUrl(t)" type="audio/mpeg" />
-                            </audio>
+                        <div class="card-body d-flex align-items-center justify-content-between">
+                            <div>
+                                <p class="fw-bold mb-1">@t.Title</p>
+                                <audio class="jam-audio"
+                                       controls
+                                       style="width:300px;"
+                                       data-track-key="@t.Id">
+                                    <source src="@BuildTrackUrl(t)" type="audio/mpeg" />
+                                </audio>
+                            </div>
+
+                            @if (t.IsCustom)
+                            {
+                                <button class="btn btn-outline-danger btn-sm p-1"
+                                        style="border-radius: 50%;"
+                                        @onclick="() => DeleteTrack(t)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            }
                         </div>
                     }
                 }
@@ -74,38 +170,69 @@ else
                     <p class="text-muted"><i>No tracks available.</i></p>
                 }
 
+                <!-- 
+                @if (tracks.Any())
+                {
+                    <div style="display:none">
+                        @foreach (var t in tracks)
+                        {
+                            <audio class="jam-audio"
+                                data-track-key="@t.Id">
+                                <source src="@BuildTrackUrl(t)" type="audio/mpeg" />
+                            </audio>
+                        }
+                    </div>
+                }
+                -->
+
                 <!-- PARTICIPANTS -->
                 <h5 class="mt-4 mb-3">Participants</h5>
 
-                <div class="card shadow-sm p-3 mb-4" style="max-width: 320px;">
-                    <div class="d-flex justify-content-between mb-3">
-                        <span>Online</span>
-                        <span class="badge bg-primary">
-                            @($"{participants?.Count ?? 0} / {session.MaxPeople?.ToString() ?? "?"}")
-                        </span>
-                    </div>
+<div class="card shadow-sm mb-4" style="max-width: 320px; border: 1px solid #198754;">
+    
+    <div class="card-header bg-success text-white py-2">
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-bold">
+                <i class="bi bi-people-fill me-2"></i>Online Users
+            </span>
+            <span class="badge bg-white text-success rounded-pill">
+                @(session?.Participants?.Count ?? 0) / @(session?.MaxPeople?.ToString() ?? "?")
+            </span>
+        </div>
+    </div>
 
-                    @if (participants is null)
-                    {
-                        <div class="text-muted"><em>Loading...</em></div>
-                    }
-                    else if (participants.Count == 0)
-                    {
-                        <div class="text-muted"><em>No one here yet.</em></div>
-                    }
-                    else
-                    {
-                        <ul class="list-group">
-                            @foreach (var name in participants)
-                            {
-                                <li class="list-group-item d-flex align-items-center">
-                                    <span>@name</span>
-                                    <span class="ms-auto online-dot"></span>
-                                </li>
-                            }
-                        </ul>
-                    }
-                </div>
+    <div class="card-body p-0" style="height: 250px; overflow-y: auto; background-color: #f8f9fa;">
+        @if (session?.Participants != null && session.Participants.Any())
+        {
+            <ul class="list-group list-group-flush">
+                @foreach (var participant in session.Participants)
+                {
+                    <li class="list-group-item d-flex align-items-center justify-content-between border-bottom-0 border-top-0" style="background-color: transparent;">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-white border border-success d-flex justify-content-center align-items-center me-2 text-success" 
+                                 style="width: 32px; height: 32px; font-weight:bold; font-size: 0.8rem;">
+                                @(string.IsNullOrEmpty(participant.DisplayName) ? "?" : participant.DisplayName.Substring(0, 1).ToUpper())
+                            </div>
+                            <span class="fw-normal">@participant.DisplayName</span>
+                        </div>
+                        <span style="height: 10px; width: 10px; background-color: #28a745; border-radius: 50%; box-shadow: 0 0 5px #28a745;" title="Online"></span>
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                <i class="bi bi-emoji-frown fs-4"></i>
+                <p class="mb-0 small mt-1">Room is empty.</p>
+            </div>
+        }
+    </div>
+    
+    <div class="card-footer bg-white text-center py-1">
+        <small class="text-success" style="font-size: 0.75rem;">Create Jam &bull; Live</small>
+    </div>
+</div>
 
                 <!-- ACTION BUTTONS -->
                 <div class="text-center mt-4">
@@ -133,6 +260,64 @@ else
                 <Chat SessionId="@SessionId" />
             </div>
         </div>
+
+        <!-- VOTE MODAL -->
+        @if (isVoteModalOpen)
+        {
+            <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+
+                        <div class="modal-header">
+                            <h5 class="modal-title">Choose next song</h5>
+                            <button type="button" class="btn-close" @onclick="CloseVoteModal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            @if (tracks.Any())
+                            {
+                                <ul class="list-group">
+                                    @foreach (var t in tracks)
+                                    {
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <input type="radio"
+                                                   name="trackChoice"
+                                                   value="@t.Id"
+                                                   checked="@(selectedTrackIdForVote == t.Id)"
+                                                   @onchange="() => selectedTrackIdForVote = t.Id" />
+                                            <span class="ms-2">
+                                                @(string.IsNullOrWhiteSpace(t.Title) ? t.FileName : t.Title)
+                                            </span>
+                                            @if (voteCounts.TryGetValue(t.Id, out var count) && count > 0)
+                                            {
+                                                <span class="ms-auto text-muted">
+                                                    @count vote@(count == 1 ? "" : "s")
+                                                </span>
+                                            }
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                            else
+                            {
+                                <p class="text-muted mb-0"><em>No tracks available.</em></p>
+                            }
+                        </div>
+
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" @onclick="CloseVoteModal">Cancel</button>
+                            <button class="btn btn-primary"
+                                    @onclick="SubmitVoteAsync"
+                                    disabled="@(selectedTrackIdForVote is null)">
+                                Vote
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        }
+
     </div>
 }
 
@@ -147,6 +332,26 @@ else
     private List<string>? participants;
     private bool isLeaving = false;
     private bool showInfo = false;
+    private IBrowserFile? selectedFile;
+    private bool isFileSelected = false;
+    private string? selectedFileName = null;
+    private bool isUploading = false;
+    private string? uploadError;
+    private HubConnection? musicHub;
+    private bool hubInitialized;
+    private DotNetObjectReference<Session>? dotNetRef;
+    private bool autoRefreshRunning;
+    private CancellationTokenSource? refreshCts;
+    private int lastTrackCount;
+    private bool sessionDeleted;     
+    private bool redirectScheduled;   
+    private AudioTrackDto? currentTrack;
+    private Dictionary<int, int> voteCounts = new();
+    private int? winningTrackId;
+    private bool isVoteModalOpen;
+    private int? selectedTrackIdForVote;
+    private bool awaitAutoPlayAfterVote;
+
 
     void ShowRoomInfo() => showInfo = true;
     void HideRoomInfo() => showInfo = false;
@@ -170,9 +375,9 @@ else
                 tracks.Clear();
             }
 
-            participants = await Http.GetFromJsonAsync<List<string>>(
+            participants = (await Http.GetFromJsonAsync<List<string>>(
                 $"api/sessions/{SessionId}/participants"
-            ) ?? new List<string>();
+            )) ?? new List<string>();
         }
         catch
         {
@@ -182,16 +387,330 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Inicijuojam JS tik kai jau turim trekų ir dar neinicijavom
+        if (sessionDeleted && !redirectScheduled)
+        {
+            redirectScheduled = true;
+            Nav.NavigateTo("/join-jam");
+            return;
+        }
+        if (firstRender)
+        {
+            await StartAutoRefreshAsync();
+        }
         if (!audioInitDone && tracks.Any())
         {
             audioInitDone = true;
             await JS.InvokeVoidAsync("audioExclusiveInit");
+
+            dotNetRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("sessionAudioSync.init", dotNetRef);
+        }
+        if (firstRender && !hubInitialized && !string.IsNullOrWhiteSpace(SessionId))
+        {
+            hubInitialized = true;
+
+            if (musicHub is null)
+            {
+                musicHub = new HubConnectionBuilder()
+                    .WithUrl(Nav.ToAbsoluteUri("/musichub"))
+                    .WithAutomaticReconnect()
+                    .Build();
+
+                musicHub.On<string, double>("PlayTrack", async (trackKey, positionSeconds) =>
+                {
+                    await JS.InvokeVoidAsync("sessionAudioSync.playRemote", trackKey, positionSeconds);
+                    if (int.TryParse(trackKey, out var trackId))
+                    {
+                        var t = tracks.FirstOrDefault(x => x.Id == trackId);
+                        if (t is not null)
+                        {
+                            currentTrack = t;
+                            await InvokeAsync(StateHasChanged);
+                        }
+                    }
+                });
+                musicHub.On<string, double>("PauseTrack", async (trackKey, positionSeconds) =>
+                {
+                    await JS.InvokeVoidAsync("sessionAudioSync.pauseRemote", trackKey, positionSeconds);
+                });
+                musicHub.On<string?, double, bool>("CurrentPlayback", async (trackKey, positionSeconds, isPlaying) =>
+                {
+                    if (!isPlaying || string.IsNullOrWhiteSpace(trackKey))
+                        return;
+
+                    await JS.InvokeVoidAsync("sessionAudioSync.playRemote", trackKey, positionSeconds);
+                });
+                musicHub.On<Dictionary<int, int>, int?>("VotesUpdated", async (counts, winnerId) =>
+                {
+                    voteCounts = counts ?? new Dictionary<int, int>();
+                    winningTrackId = winnerId;
+
+                    if (awaitAutoPlayAfterVote && currentTrack is null && winningTrackId.HasValue)
+                    {
+                        var nextTrack = tracks.FirstOrDefault(t => t.Id == winningTrackId.Value);
+                        if (nextTrack is not null)
+                        {
+                            var nextKey = nextTrack.Id.ToString();
+
+                            await JS.InvokeVoidAsync("sessionAudioSync.playRemote", nextKey, 0);
+
+                            if (musicHub is not null && !string.IsNullOrWhiteSpace(SessionId))
+                            {
+                                await musicHub.SendAsync(
+                                    "BroadcastPlayTrack",
+                                    SessionId,
+                                    nextKey,
+                                    0
+                                );
+                            }
+                            currentTrack = nextTrack;
+                        }
+                        awaitAutoPlayAfterVote = false;
+                    }
+                    await InvokeAsync(StateHasChanged);
+                });
+
+                await musicHub.StartAsync();
+                await musicHub.SendAsync("JoinSessionGroup", SessionId);
+                await musicHub.SendAsync("RequestVotes", SessionId);
+                await musicHub.SendAsync("RequestCurrentPlayback", SessionId);
+            }
+        }
+    }
+
+    [JSInvokable]
+    public async Task NotifyTrackPlayed(string trackKey, double positionSeconds)
+    {
+        if (musicHub is null || string.IsNullOrWhiteSpace(SessionId))
+            return;
+
+        await musicHub.SendAsync(
+            "BroadcastPlayTrack",
+            SessionId,
+            trackKey,
+            positionSeconds
+        );
+
+        if (int.TryParse(trackKey, out var trackId))
+        {
+            var t = tracks.FirstOrDefault(x => x.Id == trackId);
+            if (t is not null)
+            {
+                currentTrack = t;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    [JSInvokable]
+    public async Task NotifyTrackPaused(string trackKey, double positionSeconds)
+    {
+        if (musicHub is null || string.IsNullOrWhiteSpace(SessionId))
+            return;
+
+        await musicHub.SendAsync(
+            "BroadcastPauseTrack",
+            SessionId,
+            trackKey,
+            positionSeconds
+        );
+    }
+
+    [JSInvokable]
+    public async Task NotifyTrackEnded(string trackKey)
+    {
+        if (!int.TryParse(trackKey, out var endedId))
+            return;
+
+        if (currentTrack is not null && currentTrack.Id == endedId)
+        {
+            currentTrack = null;
+
+            if (voteCounts.Any() && tracks.Any())
+            {
+                var nextId = voteCounts
+                    .OrderByDescending(x => x.Value)
+                    .ThenBy(x => x.Key)
+                    .First().Key;
+
+                var nextTrack = tracks.FirstOrDefault(t => t.Id == nextId);
+                if (nextTrack is not null)
+                {
+                    var nextKey = nextTrack.Id.ToString();
+
+                    await JS.InvokeVoidAsync("sessionAudioSync.playRemote", nextKey, 0);
+
+                    if (musicHub is not null && !string.IsNullOrWhiteSpace(SessionId))
+                    {
+                        await musicHub.SendAsync(
+                            "BroadcastPlayTrack",
+                            SessionId,
+                            nextKey,
+                            0
+                        );
+                        await musicHub.SendAsync("ClearVotesForTrack", SessionId, nextId);
+                    }
+                }
+            }
+            await InvokeAsync(StateHasChanged);
         }
     }
 
     private string BuildTrackUrl(AudioTrackDto track)
-        => $"api/sessions/play-audio/{track.Mood.ToString().ToLower()}/{track.FileName}";
+    {
+        if (track.IsCustom)
+        {
+            return $"/api/sessions/play-audio/custom/{Uri.EscapeDataString(track.FileName)}";
+        }
+
+        return $"/api/sessions/play-audio/{track.Mood.ToString().ToLower()}/{Uri.EscapeDataString(track.FileName)}";
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        isFileSelected = selectedFile != null;
+        selectedFileName = selectedFile?.Name;
+    }
+
+    private async Task UploadTrack()
+{
+    uploadError = null;
+
+    if (selectedFile is null)
+    {
+        uploadError = "No file selected!";
+        return;
+    }
+
+    try
+    {
+        isUploading = true;
+
+        var clientToken = await JS.InvokeAsync<string>("localStorage.getItem", "jamClientToken");
+        if (string.IsNullOrWhiteSpace(clientToken))
+        {
+            clientToken = Guid.NewGuid().ToString();
+            await JS.InvokeVoidAsync("localStorage.setItem", "jamClientToken", clientToken);
+        }
+
+        using var content = new MultipartFormDataContent();
+        var stream = selectedFile.OpenReadStream(50 * 1024 * 1024);
+        var fileContent = new StreamContent(stream);
+
+        fileContent.Headers.ContentType =
+            new System.Net.Http.Headers.MediaTypeHeaderValue(selectedFile.ContentType);
+
+        content.Add(fileContent, "file", selectedFile.Name);
+
+        // 🔥 Pridedame clientToken į API užklausą
+        var resp = await Http.PostAsync(
+            $"/api/sessions/{SessionId}/upload-track?clientToken={Uri.EscapeDataString(clientToken)}",
+            content
+        );
+
+        if (resp.IsSuccessStatusCode)
+        {
+            var updated = await Http.GetFromJsonAsync<JamSessionDto>(
+                $"/api/sessions/get-session-id/{SessionId}"
+            );
+
+            session = updated;
+            tracks = updated?.Tracks?.ToList() ?? new();
+        }
+        else
+        {
+            uploadError = "Upload failed.";
+        }
+    }
+    catch (Exception ex)
+    {
+        uploadError = ex.Message;
+    }
+    finally
+    {
+        isUploading = false;
+    }
+}
+
+
+    private async Task DeleteTrack(AudioTrackDto track)
+    {
+        if (track == null) return;
+
+        var confirm = await JS.InvokeAsync<bool>("confirm",
+            $"Delete track '{track.Title}'?");
+
+        if (!confirm) return;
+
+        var resp = await Http.DeleteAsync($"api/sessions/{track.Id}/delete-track");
+
+        if (resp.IsSuccessStatusCode)
+        {
+            tracks.Remove(track);
+            StateHasChanged();
+        }
+        else
+        {
+            var msg = await resp.Content.ReadAsStringAsync();
+            Console.WriteLine("Delete failed: " + msg);
+        }
+    }
+
+    private void OpenVoteModal()
+    {
+        isVoteModalOpen = true;
+    }
+
+    private void CloseVoteModal()
+    {
+        isVoteModalOpen = false;
+        selectedTrackIdForVote = null;
+    }
+
+    private async Task SubmitVoteAsync()
+    {
+        if (musicHub is null || string.IsNullOrWhiteSpace(SessionId) || selectedTrackIdForVote is null)
+            return;
+
+        var track = tracks.FirstOrDefault(t => t.Id == selectedTrackIdForVote.Value);
+        if (track is null)
+            return;
+
+        var voterId = await JS.InvokeAsync<string>("localStorage.getItem", "jamClientToken");
+        if (string.IsNullOrWhiteSpace(voterId))
+        {
+            voterId = Guid.NewGuid().ToString();
+            await JS.InvokeVoidAsync("localStorage.setItem", "jamClientToken", voterId);
+        }
+        try
+        {
+            await musicHub.SendAsync("VoteForTrack", SessionId, track.Id, voterId);
+
+            if (currentTrack is null)
+            {
+                var key = track.Id.ToString();
+
+                await JS.InvokeVoidAsync("sessionAudioSync.playRemote", key, 0);
+
+                await musicHub.SendAsync(
+                    "BroadcastPlayTrack",
+                    SessionId,
+                    key,
+                    0
+                );
+                await musicHub.SendAsync("ClearVotesForTrack", SessionId, track.Id);
+
+                currentTrack = track;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("VoteForTrack failed: " + ex.Message);
+        }
+
+        CloseVoteModal();
+    }
 
     private async Task DeleteSession()
     {
@@ -253,7 +772,19 @@ else
             {
                 Console.WriteLine("leave-jam failed, status: " + resp.StatusCode);
             }
-
+            if (musicHub is not null 
+                && !string.IsNullOrWhiteSpace(SessionId) 
+                && !string.IsNullOrWhiteSpace(clientToken))
+            {
+                try
+                {
+                    await musicHub.SendAsync("RemoveVotesForVoter", SessionId, clientToken);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("RemoveVotesForVoter failed: " + ex.Message);
+                }
+            }
             Nav.NavigateTo("/join-jam");
         }
         catch (Exception ex)
@@ -265,10 +796,106 @@ else
             isLeaving = false;
         }
     }
+
+    public async ValueTask DisposeAsync()
+    {
+        refreshCts?.Cancel();
+        refreshCts?.Dispose();
+
+        if (musicHub is not null)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(SessionId))
+                {
+                    await musicHub.SendAsync("LeaveSessionGroup", SessionId);
+                }
+                await musicHub.DisposeAsync();
+            }
+            catch
+            {
+            }
+        }
+
+        dotNetRef?.Dispose();
+    }
+
+    private async Task StartAutoRefreshAsync()
+    {
+        if (autoRefreshRunning || string.IsNullOrWhiteSpace(SessionId))
+            return;
+
+        autoRefreshRunning = true;
+        refreshCts = new CancellationTokenSource();
+        var token = refreshCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(2), token);
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        break;
+                    }
+
+                    await RefreshSessionDataAsync();
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+            finally
+            {
+                autoRefreshRunning = false;
+            }
+        });
+    }
+
+    private async Task RefreshSessionDataAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SessionId))
+            return;
+
+        try
+        {
+            var updated = await Http.GetFromJsonAsync<JamSessionDto>($"api/sessions/get-session-id/{SessionId}");
+            if (updated != null)
+            {
+                session = updated;
+
+                var newTracks = updated.Tracks?.ToList() ?? new List<AudioTrackDto>();
+                if (newTracks.Count != lastTrackCount)
+                {
+                    tracks = newTracks;
+                    lastTrackCount = tracks.Count;
+                    audioInitDone = false;
+                }
+                else
+                {
+                    tracks = newTracks;
+                }
+            }
+
+            participants = (await Http.GetFromJsonAsync<List<string>>(
+                $"api/sessions/{SessionId}/participants")) ?? new List<string>();
+        }
+        catch
+        {
+            sessionDeleted = true;
+
+            session = null;
+            tracks.Clear();
+            participants = new List<string>();
+            errorMessage = "Failed to load session.";
+        }
+    }
 }
 
 <script>
-    // Leidžiam tik vieną audio vienu metu.
     window.audioExclusiveInit = () => {
         const audios = document.querySelectorAll('.jam-audio');
         if (!audios.length) return;
@@ -285,6 +912,91 @@ else
         });
 
         console.log("audioExclusiveInit: wired", audios.length, "players");
+    };
+</script>
+
+<script>
+    (function () {
+        const existing = window.sessionAudioSync || {};
+        let dotNetRef = existing._dotNetRef || null;
+
+        existing.init = function (dotNet) {
+            dotNetRef = dotNet;
+            existing._dotNetRef = dotNet;
+
+            const audios = document.querySelectorAll('.jam-audio');
+            audios.forEach(a => {
+                a.addEventListener('play', () => {
+                    const key = a.getAttribute('data-track-key') || '';
+                    const pos = a.currentTime || 0;
+                    if (dotNetRef && key) {
+                        dotNetRef.invokeMethodAsync('NotifyTrackPlayed', key, pos);
+                    }
+                });
+                a.addEventListener('pause', () => {
+                    const key = a.getAttribute('data-track-key') || '';
+                    const pos = a.currentTime || 0;
+                    if (dotNetRef && key) {
+                        dotNetRef.invokeMethodAsync('NotifyTrackPaused', key, pos);
+                    }
+                });
+                a.addEventListener('ended', () => {
+                    const key = a.getAttribute('data-track-key') || '';
+                    if (dotNetRef && key) {
+                        dotNetRef.invokeMethodAsync('NotifyTrackEnded', key);
+                    }
+                });
+            });
+
+            console.log("sessionAudioSync.init wired", audios.length, "players");
+        };
+
+        existing.playRemote = function (trackKey, position) {
+            const audio = document.querySelector(`audio[data-track-key="${trackKey}"]`);
+            if (!audio) {
+                console.warn("sessionAudioSync.playRemote: audio not found for key", trackKey);
+                return;
+            }
+
+            if (typeof position === "number" && !isNaN(position)) {
+                audio.currentTime = position;
+            } else {
+                audio.currentTime = 0;
+            }
+
+            const p = audio.play();
+            if (p && typeof p.catch === "function") {
+                p.catch(err => {
+                    if (err && err.name === "AbortError") {
+                        return;
+                    }
+                    console.error("sessionAudioSync.playRemote error", err);
+                });
+            }
+        };
+
+        existing.pauseRemote = function (trackKey, position) {
+            const audio = document.querySelector(`audio[data-track-key="${trackKey}"]`);
+            if (!audio) {
+                console.warn("sessionAudioSync.pauseRemote: audio not found for key", trackKey);
+                return;
+            }
+
+            if (typeof position === "number") {
+                audio.currentTime = position;
+            }
+
+            audio.pause();
+        };
+
+        window.sessionAudioSync = existing;
+    })();
+    window.showSessionDeletedModal = function () {
+        var modalEl = document.getElementById('sessionDeletedModal');
+        if (!modalEl) return;
+
+        var modal = new bootstrap.Modal(modalEl);
+        modal.show();
     };
 </script>
 
@@ -315,4 +1027,3 @@ else
         }
     }
 </style>
-

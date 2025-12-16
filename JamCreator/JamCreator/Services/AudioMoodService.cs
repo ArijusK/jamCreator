@@ -17,7 +17,6 @@ namespace JamCreator.Services
 
         public async Task AssignTracksAsync(JamSessionModel session, CancellationToken ct)
         {
-            // audio/chill/ , audio/rock/ ...
             var moodFolder = Path.Combine(
                 _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot"),
                 "audio",
@@ -37,6 +36,7 @@ namespace JamCreator.Services
                     FileName = Path.GetFileName(file),
                     Title = Path.GetFileNameWithoutExtension(file),
                     Mood = session.Mood,
+                    IsCustom     = false,
                     AddedAtUtc = DateTime.UtcNow
                 };
 

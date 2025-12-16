@@ -101,7 +101,6 @@
 </EditForm>
 
 @code {
-    // dropdown data
     private readonly int[] PeopleOptions = { 1, 2, 3, 4 };
 
     private readonly JamMood[] MoodOptions =
@@ -114,15 +113,10 @@
         JamMood.Classical
     };
 
-    private readonly int[] DurationOptions = { 30, 60, 90, 120 };
-
-    // form model
+    private readonly int[] DurationOptions = { 15, 30, 60, 90, 120 };
     private JamCreateModel Model = new();
-
-    // greeting message to show UI feedback after successful creation
     private string GreetingMessage = string.Empty;
 
-    // proxy bind property for Mood (string <-> enum)
     private string SelectedMood
     {
         get => Model.Mood.ToString();
@@ -135,29 +129,19 @@
         }
     }
 
-    // OPTIONAL+NAMED ARGUMENT demo:
-    // - 'name' and 'prefix' both have default values => optional args
-    // - we'll call using 'name:' etc. => named args
     private string Greet(string name = "Guest", string prefix = "Welcome")
     {
         return $"{prefix}, {name}! Thanks for creating a jam.";
     }
 
-    // submit handler
     private async Task Submit()
     {
         var response = await Http.PostAsJsonAsync("/api/sessions/create-jam", Model);
 
         if (response.IsSuccessStatusCode)
         {
-            // call Greet() AFTER jam is created successfully
-            // use named argument 'name:' but let 'prefix' use its default ("Welcome")
             GreetingMessage = Greet(name: Model.RoomName ?? "Guest");
-
-            // (optional) log it too
             Console.WriteLine(GreetingMessage);
-
-            // navigate to join page
             Nav.NavigateTo("/join-jam");
         }
         else

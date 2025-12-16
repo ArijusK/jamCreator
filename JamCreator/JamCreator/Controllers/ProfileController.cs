@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using JamCreator.Data;                      // your AppDbContext namespace
+using JamCreator.Data;                     
 using JamCreator.Shared.Models;
 using JamCreator.Shared.Models.DTOs;
 

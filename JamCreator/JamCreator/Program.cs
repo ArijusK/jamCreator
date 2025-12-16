@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using JamCreator.Shared.Models;
 using Microsoft.AspNetCore.Components;
-using JamCreator.Client;
 using System.Text.Json;
 using System.Net.Http;
 using JamCreator.Data;
@@ -70,7 +69,7 @@ app.UseRouting();
 app.MapRazorPages();
 app.MapControllers();
 app.MapFallbackToFile("index.html");
-
+app.MapHub<MusicHub>("/musichub");
 app.MapHub<ChatHub>("/chathub");
 
 app.Run();

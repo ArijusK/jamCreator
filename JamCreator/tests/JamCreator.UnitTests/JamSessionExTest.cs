@@ -25,7 +25,7 @@ public class JamSessionExtensionsTests
         var session = new JamSessionModel
         {
             IsPrivate = true,
-            Password = "" // empty / whitespace should block joining
+            Password = "" 
         };
 
         var result = session.IsJoinable();
@@ -51,11 +51,10 @@ public class JamSessionExtensionsTests
     [Fact]
     public void IsJoinable_PrivateWithWhitespacePassword_ReturnsFalse()
     {
-        // Arrange
         var session = new JamSessionModel
         {
             IsPrivate = true,
-            Password = "   " // whitespace should be treated as empty
+            Password = "   " 
         };
 
         // Act
@@ -86,13 +85,13 @@ public class JamSessionExtensionsTests
     public void IsJoinable_DefaultSession_ReturnsTrue()
     {
         // Arrange
-        var session = new JamSessionModel(); // uses default values
+        var session = new JamSessionModel();
 
         // Act
         var result = session.IsJoinable();
 
         // Assert
-        Assert.False(session.IsPrivate); // sanity check
+        Assert.False(session.IsPrivate); 
         Assert.True(result);
     }
 
