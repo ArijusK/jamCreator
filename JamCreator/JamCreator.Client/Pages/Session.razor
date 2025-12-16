@@ -134,43 +134,8 @@ else
                     </div>
                 </div>
 
-                <!-- PLAYLIST -->
-                <h5 class="mt-4 mb-2">Playlist</h5>
 
-                @if (tracks.Any())
-                {
-                    <p class="text-muted"><i>Only one track plays at a time.</i></p>
-
-                    @foreach (var t in tracks)
-                    {
-                        <div class="card-body d-flex align-items-center justify-content-between">
-                            <div>
-                                <p class="fw-bold mb-1">@t.Title</p>
-                                <audio class="jam-audio"
-                                       controls
-                                       style="width:300px;"
-                                       data-track-key="@t.Id">
-                                    <source src="@BuildTrackUrl(t)" type="audio/mpeg" />
-                                </audio>
-                            </div>
-
-                            @if (t.IsCustom)
-                            {
-                                <button class="btn btn-outline-danger btn-sm p-1"
-                                        style="border-radius: 50%;"
-                                        @onclick="() => DeleteTrack(t)">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            }
-                        </div>
-                    }
-                }
-                else
-                {
-                    <p class="text-muted"><i>No tracks available.</i></p>
-                }
-
-                <!-- 
+                
                 @if (tracks.Any())
                 {
                     <div style="display:none">
@@ -183,7 +148,7 @@ else
                         }
                     </div>
                 }
-                -->
+                
 
                 <!-- PARTICIPANTS -->
                 <h5 class="mt-4 mb-3">Participants</h5>
