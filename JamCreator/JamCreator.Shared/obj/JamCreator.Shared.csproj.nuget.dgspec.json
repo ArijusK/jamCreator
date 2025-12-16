@@ -1,47 +1,32 @@
 {
   "format": 1,
   "restore": {
-<<<<<<< HEAD
-    "C:\\Users\\justi\\Documents\\jamCreator-1\\jamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {}
+    "C:\\Users\\Administrator\\Documents\\3kursas\\PSI12025\\jamCreator\\jamcreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {}
   },
   "projects": {
-    "C:\\Users\\justi\\Documents\\jamCreator-1\\jamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {
+    "C:\\Users\\Administrator\\Documents\\3kursas\\PSI12025\\jamCreator\\jamcreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\justi\\Documents\\jamCreator-1\\jamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
+        "projectUniqueName": "C:\\Users\\Administrator\\Documents\\3kursas\\PSI12025\\jamCreator\\jamcreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
         "projectName": "JamCreator.Shared",
-        "projectPath": "C:\\Users\\justi\\Documents\\jamCreator-1\\jamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
-        "packagesPath": "C:\\Users\\justi\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\justi\\Documents\\jamCreator-1\\jamCreator\\JamCreator.Shared\\obj\\",
+        "projectPath": "C:\\Users\\Administrator\\Documents\\3kursas\\PSI12025\\jamCreator\\jamcreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
+        "packagesPath": "C:\\Users\\Administrator\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Administrator\\Documents\\3kursas\\PSI12025\\jamCreator\\jamcreator\\JamCreator.Shared\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\justi\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Administrator\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
-=======
-    "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {}
-  },
-  "projects": {
-    "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj": {
-      "version": "1.0.0",
-      "restore": {
-        "projectUniqueName": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
-        "projectName": "JamCreator.Shared",
-        "projectPath": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\JamCreator.Shared.csproj",
-        "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\User\\Documents\\VilniausUniversitetas\\ProgramuSistemos\\SoftwareEngineering\\Projektas\\jamCreator\\JamCreator\\JamCreator.Shared\\obj\\",
-        "projectStyle": "PackageReference",
-        "configFilePaths": [
-          "C:\\Users\\User\\AppData\\Roaming\\NuGet\\NuGet.Config"
->>>>>>> tests
         ],
         "originalTargetFrameworks": [
           "net9.0"
         ],
         "sources": {
-<<<<<<< HEAD
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-=======
->>>>>>> tests
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -81,7 +66,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
