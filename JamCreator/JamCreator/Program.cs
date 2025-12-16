@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using JamCreator.Shared.Models;
 using Microsoft.AspNetCore.Components;
-using JamCreator.Client;
 using System.Text.Json;
 using System.Net.Http;
 using JamCreator.Data;

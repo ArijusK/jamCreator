@@ -5,12 +5,12 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-using JamCreator.Shared.Models;         
-using JamCreator.Shared.Models.DTOs;     
-using JamCreator.Shared.Interfaces;      
-using JamCreator.Data;                   
-using JamCreator.Services; 
-                                         
+using JamCreator.Shared.Models;
+using JamCreator.Shared.Models.DTOs;
+using JamCreator.Shared.Interfaces;
+using JamCreator.Data;
+using JamCreator.Services;
+
 namespace JamCreator.Controllers
 {
     [ApiController]
@@ -23,6 +23,7 @@ namespace JamCreator.Controllers
         private readonly AppDbContext _db;
         private readonly IWebHostEnvironment _env;
         private readonly IAudioMoodService _audioMood;
+
         public SessionsController(
             IRepository<JamSessionModel, string> sessions,
             IRepository<SessionParticipant, int> participants,
@@ -37,13 +38,11 @@ namespace JamCreator.Controllers
             _db = db;
             _env = env;
             _audioMood = audioMood;
-            
         }
 
         private static bool IsExpired(JamSessionModel s)
         {
             if (!s.DurationMinutes.HasValue) return false;
-
             var expires = s.CreatedAtUtc.AddMinutes(s.DurationMinutes.Value);
             return DateTime.UtcNow >= expires;
         }
@@ -64,7 +63,6 @@ namespace JamCreator.Controllers
             await _db.SaveChangesAsync();
         }
 
-
         // POST: api/sessions/create-jam
         [HttpPost("create-jam")]
         public async Task<IActionResult> Create([FromBody] JamCreateModel model, CancellationToken ct)
@@ -74,15 +72,15 @@ namespace JamCreator.Controllers
 
             var session = new JamSessionModel
             {
-                RoomName        = model.RoomName,
-                Genre           = model.Genre,
-                Description     = model.Description,
-                IsPrivate       = model.IsPrivate,
-                Password        = model.Password,
-                Mood            = model.Mood,
-                MaxPeople       = model.MaxPeople ?? 4,
+                RoomName = model.RoomName,
+                Genre = model.Genre,
+                Description = model.Description,
+                IsPrivate = model.IsPrivate,
+                Password = model.Password,
+                Mood = model.Mood,
+                MaxPeople = model.MaxPeople ?? 4,
                 DurationMinutes = model.DurationMinutes,
-                AllowSkipVote   = model.AllowSkipVote
+                AllowSkipVote = model.AllowSkipVote
             };
 
             await _sessions.AddAsync(session, ct);
@@ -102,17 +100,17 @@ namespace JamCreator.Controllers
                     s.CreatedAtUtc.AddMinutes(s.DurationMinutes.Value) > now)
                 .Select(s => new JamSessionDto
                 {
-                    Id              = s.Id,
-                    RoomName        = s.RoomName,
-                    Genre           = s.Genre,
-                    Description     = s.Description,
-                    IsPrivate       = s.IsPrivate,
-                    Mood            = s.Mood,
-                    MaxPeople       = s.MaxPeople,
+                    Id = s.Id,
+                    RoomName = s.RoomName,
+                    Genre = s.Genre,
+                    Description = s.Description,
+                    IsPrivate = s.IsPrivate,
+                    Mood = s.Mood,
+                    MaxPeople = s.MaxPeople,
                     DurationMinutes = s.DurationMinutes,
-                    AllowSkipVote   = s.AllowSkipVote,
-                    CreatedAtUtc    = s.CreatedAtUtc,
-                    Participants    = s.Participants.Select(p => new ParticipantDto { Id = p.Id }).ToList()
+                    AllowSkipVote = s.AllowSkipVote,
+                    CreatedAtUtc = s.CreatedAtUtc,
+                    Participants = s.Participants.Select(p => new ParticipantDto { Id = p.Id }).ToList()
                 })
                 .ToListAsync(ct);
 
@@ -134,32 +132,32 @@ namespace JamCreator.Controllers
                             s.CreatedAtUtc.AddMinutes(s.DurationMinutes.Value) > now))
                 .Select(s => new JamSessionDto
                 {
-                    Id              = s.Id,
-                    RoomName        = s.RoomName,
-                    Genre           = s.Genre,
-                    Description     = s.Description,
-                    IsPrivate       = s.IsPrivate,
-                    Mood            = s.Mood,
-                    MaxPeople       = s.MaxPeople,
+                    Id = s.Id,
+                    RoomName = s.RoomName,
+                    Genre = s.Genre,
+                    Description = s.Description,
+                    IsPrivate = s.IsPrivate,
+                    Mood = s.Mood,
+                    MaxPeople = s.MaxPeople,
                     DurationMinutes = s.DurationMinutes,
-                    AllowSkipVote   = s.AllowSkipVote,
-                    CreatedAtUtc    = s.CreatedAtUtc,
-                    Participants    = s.Participants
+                    AllowSkipVote = s.AllowSkipVote,
+                    CreatedAtUtc = s.CreatedAtUtc,
+                    Participants = s.Participants
                         .Select(p => new ParticipantDto
                         {
-                            Id          = p.Id,
+                            Id = p.Id,
                             DisplayName = p.DisplayName,
                             JoinedAtUtc = p.JoinedAtUtc
                         }).ToList(),
                     Tracks = s.Tracks
                         .Select(t => new AudioTrackDto
                         {
-                            Id       = t.Id,
+                            Id = t.Id,
                             FileName = t.FileName,
-                            Title    = t.Title,
-                            Mood     = t.Mood,
+                            Title = t.Title,
+                            Mood = t.Mood,
                             Duration = t.Duration,
-                            IsCustom = t.IsCustom 
+                            IsCustom = t.IsCustom
                         }).ToList()
                 })
                 .AsNoTracking()
@@ -231,8 +229,8 @@ namespace JamCreator.Controllers
             var newParticipant = new SessionParticipant
             {
                 JamSessionId = session.Id,
-                DisplayName  = name,
-                ClientToken  = request.ClientToken
+                DisplayName = name,
+                ClientToken = request.ClientToken
             };
 
             await _participants.AddAsync(newParticipant, ct);
@@ -246,35 +244,14 @@ namespace JamCreator.Controllers
             });
         }
 
-
-        [HttpGet("play-audio/{mood}/{fileName}")]
-        public IActionResult PlayAudio(string mood, string fileName)
-        {
-            if (string.IsNullOrWhiteSpace(mood) || string.IsNullOrWhiteSpace(fileName))
-                return BadRequest();
-
-            fileName = Path.GetFileName(fileName);
-
-            var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
-            var filePath = Path.Combine(webRoot, "audio", mood.ToLower(), fileName);
-
-            if (!System.IO.File.Exists(filePath))
-                return NotFound($"File not found: {filePath}");
-
-            return new PhysicalFileResult(filePath, "audio/mpeg")
-            {
-                EnableRangeProcessing = true
-            };
-        }
-
-        // GET: api/sessions/play-audio/custom/{sessionId}/{fileName}
+        // Custom audio file GET
         [HttpGet("play-audio/custom/{fileName}")]
         public IActionResult PlayCustomAudio(string fileName)
         {
             if (string.IsNullOrWhiteSpace(fileName))
                 return BadRequest();
 
-             var safeName = Path.GetFileName(fileName);
+            var safeName = Path.GetFileName(fileName);
 
             var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
             var filePath = Path.Combine(webRoot, "audio", "custom", safeName);
@@ -288,8 +265,13 @@ namespace JamCreator.Controllers
             };
         }
 
+        // UPLOAD TRACK
         [HttpPost("{sessionId}/upload-track")]
-        public async Task<IActionResult> UploadAudio(string sessionId, IFormFile file, CancellationToken ct)
+        public async Task<IActionResult> UploadAudio(
+            string sessionId,
+            IFormFile file,
+            [FromQuery] string? clientToken,
+            CancellationToken ct)
         {
             if (file == null || file.Length == 0)
                 return BadRequest("No file uploaded.");
@@ -302,38 +284,41 @@ namespace JamCreator.Controllers
                 return NotFound("Session not found.");
 
             var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
-            var folder  = Path.Combine(webRoot, "audio", "custom");
+            var folder = Path.Combine(webRoot, "audio", "custom");
             Directory.CreateDirectory(folder);
 
-            var safefileName = Path.GetFileName(file.FileName);
-            var savePath = Path.Combine(folder, safefileName);
+            var safeFileName = Path.GetFileName(file.FileName);
+            var savePath = Path.Combine(folder, safeFileName);
 
             using (var stream = System.IO.File.Create(savePath))
                 await file.CopyToAsync(stream, ct);
 
             var track = new AudioTrack
             {
-                JamSessionId = session.Id,                         
-                FileName      = safefileName,                          
-                Title         = Path.GetFileNameWithoutExtension(safefileName),
-                Mood          = session.Mood,
-                IsCustom      = true,
-                AddedAtUtc    = DateTime.UtcNow
+                JamSessionId = session.Id,
+                FileName = safeFileName,
+                Title = Path.GetFileNameWithoutExtension(safeFileName),
+                Mood = session.Mood,
+                IsCustom = true,
+                AddedAtUtc = DateTime.UtcNow,
+
+                UploadedByClientToken = clientToken
             };
 
-            _db.Tracks.Add(track);  
+            _db.Tracks.Add(track);
             await _db.SaveChangesAsync(ct);
 
             return Ok(new AudioTrackDto
             {
-                Id       = track.Id,
+                Id = track.Id,
                 FileName = track.FileName,
-                Title    = track.Title,
-                Mood     = track.Mood,
+                Title = track.Title,
+                Mood = track.Mood,
                 IsCustom = true
             });
         }
 
+        // DELETE TRACK
         [HttpDelete("{trackId}/delete-track")]
         public async Task<IActionResult> DeleteTrack(int trackId, CancellationToken ct)
         {
@@ -357,9 +342,7 @@ namespace JamCreator.Controllers
         }
 
 
-
-
-        // DELETE: api/sessions/delete-session/{id}
+        // DELETE SESSION
         [HttpDelete("delete-session/{id}")]
         public async Task<IActionResult> Delete(string id, CancellationToken ct)
         {
@@ -374,7 +357,7 @@ namespace JamCreator.Controllers
                 .Where(t => t.JamSessionId == id && t.IsCustom)
                 .ToListAsync(ct);
 
-            var webRoot     = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+            var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
             var customFolder = Path.Combine(webRoot, "audio", "custom");
 
             foreach (var track in customTracks)
@@ -386,14 +369,8 @@ namespace JamCreator.Controllers
 
                 if (System.IO.File.Exists(path))
                 {
-                    try
-                    {
-                        System.IO.File.Delete(path);
-                    }
-                    catch
-                    {
-
-                    }
+                    try { System.IO.File.Delete(path); }
+                    catch { }
                 }
             }
 
@@ -404,29 +381,54 @@ namespace JamCreator.Controllers
             return NoContent();
         }
 
-        
+        // LEAVE SESSION
         [HttpPost("leave-jam")]
         public async Task<IActionResult> Leave([FromBody] LeaveJamModel req, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(req.SessionId))
                 return BadRequest();
 
+            // FIND USER IN SESSION
             var participants = await _participants.ListAsync(
                 p => p.JamSessionId == req.SessionId &&
-                    p.DisplayName == req.DisplayName,
-                ct
-            );
+                     p.DisplayName == req.DisplayName,
+                ct);
 
             if (!participants.Any())
                 return NoContent();
 
+            // ⛔ DELETE USER'S CUSTOM TRACKS
+            if (!string.IsNullOrWhiteSpace(req.ClientToken))
+            {
+                var userTracks = await _db.Tracks
+                    .Where(t => t.JamSessionId == req.SessionId &&
+                                t.IsCustom &&
+                                t.UploadedByClientToken == req.ClientToken)
+                    .ToListAsync(ct);
+
+                var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+                var folder = Path.Combine(webRoot, "audio", "custom");
+
+                foreach (var track in userTracks)
+                {
+                    var filePath = Path.Combine(folder, track.FileName);
+                    if (System.IO.File.Exists(filePath))
+                        System.IO.File.Delete(filePath);
+
+                    _db.Tracks.Remove(track);
+                }
+
+                await _db.SaveChangesAsync(ct);
+            }
+
+            // DELETE PARTICIPANT ENTRY
             foreach (var p in participants)
                 await _participants.DeleteAsync(p, ct);
 
             return NoContent();
         }
 
-        // GET: api/sessions/{sessionId}/participants
+        // GET PARTICIPANTS
         [HttpGet("{sessionId}/participants")]
         public async Task<IActionResult> GetParticipants(string sessionId, CancellationToken ct)
         {
