@@ -1,46 +1,90 @@
-# jamCreator
+# JamCreator  
+**Real-Time Collaborative Music Platform**
+
+JamCreator is a web application that allows multiple users to listen to music together in shared rooms, interact through chat, and collaboratively control a music queue.
+
+---
+
+## Features
+
+- Real-time multi-user rooms  
+- Chat system using SignalR  
+- Collaborative music queue with vote-to-skip functionality  
+- User tracking (who added which song)  
+- Backend built with C# and ASP.NET  
+- Database integration using Entity Framework Core and PostgreSQL  
+
+---
+
+## Tech Stack
+
+- **Backend:** C#, ASP.NET Core  
+- **Real-time communication:** SignalR  
+- **Database:** PostgreSQL + Entity Framework Core  
+- **Frontend:** Blazor (WebAssembly)  
+- **Other:** Docker (for database setup)
+
+---
+
+## Getting Started
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/ArijusK/jamCreator.git
+cd jamCreator
+```
+
+### 2. Start the database (Docker)
+
+Make sure Docker Desktop is running, then:
+
+```bash
+docker compose up -d
+```
+
+This will start a PostgreSQL database on port 5432.
+
+### 3. Run the application
+
+Navigate to the main project folder (JamCreator folder with JamCreator.csproj file) and run:
+
+```bash
+dotnet run
+```
+On first run:
+
+the database will be created automatically
+migrations will be applied
+
+### 4. Open the app
+
+Open your browser and go to:
+
+https://localhost:xxxx
+
+(Replace with the port shown in your terminal if different)
+
+---
+
+## Project Structure
+ - JamCreator/ – main server application
+ - JamCreator.Client/ – frontend (Blazor WebAssembly)
+ - JamCreator.Shared/ – shared models and interfaces
+ - tests/ – testing project
   
-  ## Project goals
+## Notes
+ - The application uses SignalR hubs for real-time features (chat and music sync).
+ - Database connection is configured in appsettings.json.
+ - Docker is used only for PostgreSQL to simplify setup.
 
-  * Create a piece of software that allows multiple people to listen to music together simultaniously.
-  * Include a system that counts each members song skip numbers (or as an alternate mode).
-  * The ability to see which member queued up what song.
-  * Have a lobby to see who is currently listening.
-  * Implement the spotify API to have a song database (If it is effective).
-  * Have a full easy to understand and use UI.
-  * An easy way to connect to the jam.
-    
+## Future Improvements
+ - Spotify API integration
+ - Improved synchronization of playback across users
+ - Enhanced UI/UX
 
-  ### Possible goals:
-
-  * Have a user database with accounts.
-  * Have a jam room browser.
-
-  > Browsing via genre, artist, listeners, friend list or room.
-
-  * Implement a chat option in rooms.
-  * The capability for some sort of customizable ruleset for listening rooms.
-
-  ***
-
-  ## Alpha version goals:
-
-  * Capability for multiple members to connect to the same live room.
-  * Begginings of the UI.
-
-
-  ***
-
-  ## Beta version goals:
-
- * Capability to play music together at the same time.
-
-  ***
-
-  ## Team name: ***JamCreator***
-
-  ### Members and their github usernames:
-
+## Members and their github usernames:
+s
 * Arijus Kaminskas
   
   > ArijusK
