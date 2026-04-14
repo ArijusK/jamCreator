@@ -84,7 +84,7 @@ https://localhost:xxxx
  - Enhanced UI/UX
 
 ## Members and their github usernames:
-s
+
 * Arijus Kaminskas
   
   > ArijusK
@@ -105,8 +105,6 @@ s
 
   >Karolis814
 
-## Showcase video:
-https://youtu.be/KeshuoYdPts
  
     
   
